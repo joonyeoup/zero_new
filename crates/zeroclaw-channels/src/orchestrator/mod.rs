@@ -15134,16 +15134,14 @@ This is an example JSON object for profile settings."#;
 
     #[cfg(feature = "channel-discord")]
     #[tokio::test]
-    async fn supervised_listener_does_not_restart_on_fatal_discord_rate_limit() {
+    async fn supervised_listener_enters_retry_path_on_discord_gateway_rate_limit() {
         let calls = Arc::new(AtomicUsize::new(0));
         let channel_name = format!("discord-{}", uuid::Uuid::new_v4());
         let channel: Arc<dyn Channel> = Arc::new(FailOnceChannel {
             name: channel_name,
             calls: Arc::clone(&calls),
-            err: Mutex::new(Some(anyhow::Error::new(
-                crate::discord::DiscordListenerFatalError::new(
-                    "discord gateway preflight rate-limited (429 Too Many Requests)",
-                ),
+            err: Mutex::new(Some(anyhow::Error::msg(
+                "discord gateway preflight rate-limited (429 Too Many Requests)",
             ))),
         });
 
@@ -15157,12 +15155,15 @@ This is an example JSON object for profile settings."#;
         let component = &snapshot["components"][&component_name];
         assert_eq!(calls.load(Ordering::SeqCst), 1);
         assert_eq!(component["status"], "error");
-        assert_eq!(component["restart_count"].as_u64().unwrap_or(0), 0);
         assert!(
             component["last_error"]
                 .as_str()
                 .unwrap_or("")
                 .contains("429 Too Many Requests")
+        );
+        assert!(
+            component["restart_count"].as_u64().unwrap_or(0) >= 1,
+            "Discord gateway 429 should back off through the retry path instead of parking"
         );
 
         drop(rx);
@@ -15226,7 +15227,7 @@ This is an example JSON object for profile settings."#;
             calls: Arc::clone(&discord_calls),
             err: Mutex::new(Some(anyhow::Error::new(
                 crate::discord::DiscordListenerFatalError::new(
-                    "discord gateway preflight rate-limited (429 Too Many Requests)",
+                    "discord gateway closed with fatal code 4014: disallowed intent(s)",
                 ),
             ))),
         });
@@ -15282,7 +15283,7 @@ This is an example JSON object for profile settings."#;
             discord["last_error"]
                 .as_str()
                 .unwrap_or("")
-                .contains("429 Too Many Requests")
+                .contains("fatal code 4014")
         );
         assert_eq!(healthy["status"], "ok");
         assert!(
