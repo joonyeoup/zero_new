@@ -20,6 +20,7 @@ use super::types::{
     SopTrigger, SopTriggerSource,
 };
 use crate::calendar::{CALENDAR_NO_SHOW_TOPIC, CalendarNoShowEvent};
+use crate::security::{ContentSafety, new_marker_id};
 use serde_json::Value;
 use zeroclaw_config::schema::{ApprovalMode, SopConfig};
 
@@ -346,6 +347,7 @@ impl SopEngine {
             run_id: run_id.clone(),
             sop_name: sop_name.to_string(),
             trigger_event: event,
+            frame_marker_id: new_marker_id(),
             status: SopRunStatus::Running,
             current_step: 1,
             total_steps: u32::try_from(sop.steps.len()).unwrap_or(u32::MAX),
@@ -813,7 +815,7 @@ impl SopEngine {
                 .active_runs
                 .get(run_id)
                 .ok_or_else(|| anyhow::Error::msg(format!("Active run not found: {run_id}")))?;
-            format_step_context(sop, run, &step)
+            format_step_context(sop, run, &step, &self.config)
         };
         let action = resolve_step_action(
             sop,
@@ -1088,7 +1090,7 @@ impl SopEngine {
             .ok_or_else(|| anyhow::Error::msg(format!("Active run not found: {run_id}")))?;
         run.status = SopRunStatus::Running;
         run.waiting_since = None;
-        let context = format_step_context(&sop, run, &step);
+        let context = format_step_context(&sop, run, &step, &self.config);
 
         self.persist_active(run_id);
         Ok(SopRunAction::ExecuteStep {
@@ -1166,6 +1168,7 @@ impl SopEngine {
             run_id: run_id.clone(),
             sop_name: sop_name.to_string(),
             trigger_event: event,
+            frame_marker_id: new_marker_id(),
             status: SopRunStatus::Running,
             current_step: 1,
             total_steps,
@@ -1734,7 +1737,7 @@ impl SopEngine {
     // ── EPIC C: out-of-band approval plane ──────────────────────────
 
     /// Read-only config access for the approval resolver.
-    pub(crate) fn config(&self) -> &SopConfig {
+    pub fn config(&self) -> &SopConfig {
         &self.config
     }
 
@@ -2011,22 +2014,22 @@ fn resolve_step_action(
 // ── Step context formatting ─────────────────────────────────────
 
 /// Build the structured context message that gets injected into the agent.
-fn format_step_context(sop: &Sop, run: &SopRun, step: &SopStep) -> String {
+fn format_step_context(sop: &Sop, run: &SopRun, step: &SopStep, config: &SopConfig) -> String {
     let mut ctx = format!(
         "[SOP: {} (run {}) — Step {} of {}]\n\n",
         sop.name, run.run_id, step.number, run.total_steps
     );
 
-    // Untrusted trigger metadata (topic + payload) can carry injected
-    // instructions, so it is capped, sanitized, and framed before it ever
-    // reaches the model, never raw (audit finding E). A forged end-marker can't
-    // escape the block because sanitize_untrusted defangs the SOP_UNTRUSTED token;
-    // the marker id (run_id) is provenance/correlation only, NOT a secret.
-    ctx.push_str(&super::payload_safety::frame_trigger(
+    let marker_id = if run.frame_marker_id.is_empty() {
+        run.run_id.as_str()
+    } else {
+        run.frame_marker_id.as_str()
+    };
+    ctx.push_str(&ContentSafety::from_sop_config(config).frame_for_context(
         run.trigger_event.payload.as_deref(),
         run.trigger_event.topic.as_deref(),
         run.trigger_event.source,
-        &run.run_id,
+        marker_id,
     ));
 
     // Previous step summary
@@ -3432,6 +3435,7 @@ mod tests {
             run_id: "run-001".into(),
             sop_name: "pump-shutdown".into(),
             trigger_event: manual_event(),
+            frame_marker_id: "marker-001".into(),
             status: SopRunStatus::Running,
             current_step: 1,
             total_steps: 2,
@@ -3441,7 +3445,7 @@ mod tests {
             waiting_since: None,
             llm_calls_saved: 0,
         };
-        let ctx = format_step_context(&sop, &run, &sop.steps[0]);
+        let ctx = format_step_context(&sop, &run, &sop.steps[0], &SopConfig::default());
         assert!(ctx.contains("pump-shutdown"));
         assert!(ctx.contains("Step 1 of 2"));
         assert!(ctx.contains("Step one"));
@@ -4413,6 +4417,7 @@ type = "manual"
                 payload: None,
                 timestamp: now_iso8601(),
             },
+            frame_marker_id: "marker-restore".to_string(),
             status: SopRunStatus::WaitingApproval,
             current_step: 1,
             total_steps: 2,
@@ -4454,6 +4459,7 @@ type = "manual"
                 payload: None,
                 timestamp: now_iso8601(),
             },
+            frame_marker_id: "marker-persist".to_string(),
             status: SopRunStatus::Running,
             current_step: 0,
             total_steps: 2,
