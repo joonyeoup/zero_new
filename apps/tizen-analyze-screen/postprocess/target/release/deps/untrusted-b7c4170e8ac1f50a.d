@@ -1,0 +1,10 @@
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/release/deps/untrusted-b7c4170e8ac1f50a.d: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/input.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/no_panic.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/reader.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/release/deps/libuntrusted-b7c4170e8ac1f50a.rlib: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/input.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/no_panic.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/reader.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/release/deps/libuntrusted-b7c4170e8ac1f50a.rmeta: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/input.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/no_panic.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/reader.rs
+
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/lib.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/input.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/no_panic.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/untrusted-0.9.0/src/reader.rs:

@@ -1,0 +1,18 @@
+[package]
+name = "analyze-screen-postprocess"
+version = "0.1.0"
+edition = "2021"
+description = "Schema validation + single-retry proxy: Tizen app -> here -> ZeroClaw /webhook"
+
+[workspace]
+
+[dependencies]
+tiny_http = "0.12"
+ureq = { version = "2.10", features = ["json"] }
+serde_json = "1"
+humantime = "2"
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true

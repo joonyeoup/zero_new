@@ -1,0 +1,10 @@
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/debug/deps/idna-b992b163afdd6365.d: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/debug/deps/libidna-b992b163afdd6365.rlib: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/postprocess/target/debug/deps/libidna-b992b163afdd6365.rmeta: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs:

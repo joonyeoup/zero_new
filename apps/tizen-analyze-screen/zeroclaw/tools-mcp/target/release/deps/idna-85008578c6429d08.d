@@ -1,0 +1,10 @@
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/release/deps/idna-85008578c6429d08.d: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/release/deps/libidna-85008578c6429d08.rlib: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/Desktop/personal_project/zeroclaw/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/release/deps/libidna-85008578c6429d08.rmeta: /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs /Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs
+
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/lib.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/deprecated.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/punycode.rs:
+/Users/joonyeoupkim/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/idna-1.1.0/src/uts46.rs:

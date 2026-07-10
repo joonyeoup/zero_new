@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=1920, user-scalable=no">
+    <title>Analyze Screen</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <main id="app">
+        <h1 class="app-title">ZeroClaw Screen Analyzer</h1>
+        <p class="hint">Press <span class="key">ENTER</span> on the remote, or click the button</p>
+
+        <button id="analyze-btn" class="focusable" autofocus>
+            Analyze this screen
+        </button>
+
+        <p id="status-line" aria-live="polite"></p>
+    </main>
+
+    <!-- Overlay: loading / error / result -->
+    <div id="overlay" class="hidden">
+        <div id="overlay-card">
+            <!-- Loading state -->
+            <div id="state-loading" class="state hidden">
+                <div class="spinner"></div>
+                <p id="loading-text">Capturing screen…</p>
+            </div>
+
+            <!-- Error state -->
+            <div id="state-error" class="state hidden">
+                <h2 class="error-title">Something went wrong</h2>
+                <p id="error-code" class="error-code"></p>
+                <p id="error-message"></p>
+            </div>
+
+            <!-- Result state -->
+            <div id="state-result" class="state hidden">
+                <p id="result-type" class="badge"></p>
+                <h2 id="result-title"></h2>
+                <p id="result-summary"></p>
+
+                <h3>Detected on screen</h3>
+                <ul id="result-elements"></ul>
+
+                <h3>You could…</h3>
+                <ul id="result-actions"></ul>
+
+                <p id="result-timings" class="timings"></p>
+            </div>
+
+            <button id="close-btn" class="focusable hidden">Close</button>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

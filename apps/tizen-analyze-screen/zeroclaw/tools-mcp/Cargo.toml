@@ -1,0 +1,28 @@
+[package]
+name = "tv-screen-tools"
+version = "0.1.0"
+edition = "2021"
+description = "MCP stdio server exposing screenshot + analyze_image tools to ZeroClaw"
+
+# Standalone: cross-compiled for the TV independently of any workspace.
+[workspace]
+
+[dependencies]
+serde_json = "1"
+ureq = { version = "2.10", features = ["json"] }
+base64 = "0.22"
+wait-timeout = "0.2"
+humantime = "2"
+
+# Pure-Rust downscaling (preferred over system ImageMagick per spec). Optional
+# so constrained TV builds can drop it: --no-default-features.
+image = { version = "0.25", optional = true, default-features = false, features = ["png"] }
+
+[features]
+default = ["downscale"]
+downscale = ["dep:image"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true

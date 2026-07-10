@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<widget xmlns="http://www.w3.org/ns/widgets"
+        xmlns:tizen="http://tizen.org/ns/widgets"
+        id="http://yourdomain/analyzescreen"
+        version="1.0.0"
+        viewmodes="maximized">
+    <tizen:application id="AnLzScrn01.AnalyzeScreen"
+                       package="AnLzScrn01"
+                       required_version="6.0"/>
+    <content src="index.html"/>
+    <feature name="http://tizen.org/feature/screen.size.all"/>
+    <icon src="icon.png"/>
+    <name>Analyze Screen</name>
+
+    <!-- Network access to the local ZeroClaw sidecar gateway -->
+    <tizen:privilege name="http://tizen.org/privilege/internet"/>
+    <!-- Register remote-control keys beyond the basic set if needed later -->
+    <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+
+    <!-- Allow fetch() to the loopback gateway (CSP/navigation policy) -->
+    <access origin="http://127.0.0.1" subdomains="false"/>
+    <access origin="http://localhost" subdomains="false"/>
+    <tizen:allow-navigation>http://127.0.0.1 http://localhost</tizen:allow-navigation>
+
+    <tizen:profile name="tv"/>
+    <tizen:setting screen-orientation="landscape"
+                   context-menu="disable"
+                   background-support="disable"
+                   encryption="disable"
+                   install-location="auto"/>
+</widget>

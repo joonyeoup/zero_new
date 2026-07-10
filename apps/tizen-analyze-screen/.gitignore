@@ -1,0 +1,13 @@
+# Rust build artifacts
+zeroclaw/sidecar/target/
+
+# Tizen packaging output
+*.wgt
+.buildResult/
+.sign/
+
+# OS noise
+.DS_Store
+
+# Local scratch configs (real TV/DGX values shouldn't be committed)
+sidecar.local.toml

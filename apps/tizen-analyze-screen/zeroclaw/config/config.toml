@@ -1,0 +1,87 @@
+# ZeroClaw config template for the TV — agentic analyze-screen POC.
+# Merge these sections into {{ZEROCLAW_CONFIG_PATH}} (~/.zeroclaw/config.toml).
+# Placeholders: fill every REPLACE_ME. No secrets here — API keys go through
+# env vars or the encrypted credential store.
+#
+# VERIFIED against ZeroClaw 0.8.2 (scripts/test_e2e.sh runs this exact shape
+# against the real gateway). The non-obvious requirements, learned the hard
+# way (see STATUS.md):
+#   - Gateway chat REQUIRES an [agents.<alias>] entry; a provider alone
+#     is rejected with "no configured [agents.<alias>] entry".
+#   - The agent's risk_profile must name a configured [risk_profiles.*]
+#     entry, and MCP servers are granted only through mcp_bundles
+#     (omission is not a grant).
+#   - Runtime tunables (max_tool_iterations, history) live on
+#     [runtime_profiles.<alias>] — there is no top-level [agent] block.
+#   - The `vllm` provider family always uses NATIVE OpenAI tool calling
+#     (tool specs in the request body). The DGX endpoint must support it —
+#     for vLLM serve, pass --enable-auto-tool-choice and a --tool-call-parser
+#     matching the model. ZeroClaw's XML text fallback is not reachable for
+#     this family in 0.8.2.
+#   - ZeroClaw ships a BUILT-IN `screenshot` tool; exclude it or it shadows
+#     the MCP tv__screenshot and captures nothing useful on the TV.
+#   - The agent system prompt (SOUL.md) lives in the per-agent workspace:
+#     <config dir>/agents/main/workspace/SOUL.md (deploy_tv.sh pushes it).
+#   - 0.8.2 masks image paths in tool results as "[media attachment]"
+#     before a non-vision LLM sees them; the analyze_image tool therefore
+#     treats image_path as optional and falls back to the latest screenshot.
+
+schema_version = 3
+
+# ── The agent's brain: DGX LLM ────────────────────────────────────────────
+[providers.models.vllm.dgx]
+uri = "http://REPLACE_ME:8000/v1"           # {{LLM_BASE_URL}} (v3 field name is `uri`)
+model = "REPLACE_ME"                        # {{LLM_MODEL_NAME}}
+wire_api = "chat_completions"
+timeout_secs = 30                           # per LLM turn
+max_tokens = 2048
+temperature = 0.2
+
+# ── The agent ─────────────────────────────────────────────────────────────
+[agents.main]
+model_provider = "vllm.dgx"
+risk_profile = "default"
+runtime_profile = "tv"
+mcp_bundles = ["tv-tools"]
+
+[runtime_profiles.tv]
+agentic = true
+max_tool_iterations = 6       # screenshot + analyze_image + final answer fits well within
+max_history_messages = 16     # keeps the retry nudge in the same conversation window
+
+[risk_profiles.default]
+level = "full"                # POC: no approval prompts on the TV
+auto_approve = ["tv__screenshot", "tv__analyze_image"]
+excluded_tools = ["screenshot"]   # built-in screenshot shadows tv__screenshot
+
+[mcp_bundles.tv-tools]
+servers = ["tv"]
+
+# ── Custom tools via MCP ──────────────────────────────────────────────────
+[mcp]
+enabled = true
+
+[[mcp.servers]]
+name = "tv"                                       # tools become tv__screenshot / tv__analyze_image
+transport = "stdio"
+command = "/opt/usr/home/owner/tv-screen-tools"   # pushed by deploy_tv.sh
+
+[mcp.servers.env]
+SCREENSHOT_MODE = "exec"                          # "watch" if the TV blocks subprocess spawn
+SCREENSHOT_BIN = "/opt/usr/home/owner/tizenscreenshot"   # {{PATH_TO_BINARY}}
+SCREENSHOT_OUTPUT = "/tmp/screenshot.png"                # {{SCREENSHOT_OUTPUT_PATH}}
+SCREENSHOT_TIMEOUT_SECS = "10"
+VLM_BASE_URL = "http://REPLACE_ME:8000/v1"               # {{VLM_BASE_URL}}
+VLM_MODEL = "Qwen/Qwen3-VL-8B-Instruct"                  # {{VLM_MODEL_NAME}}
+VLM_TIMEOUT_SECS = "60"
+DOWNSCALE_ENABLED = "true"
+DOWNSCALE_MAX_EDGE = "1280"
+
+# ── Gateway the postprocess sidecar talks to ─────────────────────────────
+[gateway]
+host = "127.0.0.1"
+port = 42617                  # {{ZEROCLAW_PORT}}
+# POC simplification: loopback-only + no pairing so the sidecar can call
+# /webhook without token plumbing. Re-enable for anything beyond the demo
+# and set GATEWAY_TOKEN on the postprocess sidecar instead.
+require_pairing = false
