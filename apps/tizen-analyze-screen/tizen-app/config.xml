@@ -11,11 +11,14 @@
     <feature name="http://tizen.org/feature/screen.size.all"/>
     <icon src="icon.png"/>
     <name>Analyze Screen</name>
+    <tizen:metadata key="http://samsung.com/tv/metadata/transparent.support" value="true"/>
 
     <!-- Network access to the local ZeroClaw sidecar gateway -->
     <tizen:privilege name="http://tizen.org/privilege/internet"/>
     <!-- Register remote-control keys beyond the basic set if needed later -->
     <tizen:privilege name="http://tizen.org/privilege/tv.inputdevice"/>
+    <!-- <tizen:privilege name="http://tizen.org/privilege/tv.window"/> -->
+
 
     <!-- Allow fetch() to the loopback gateway (CSP/navigation policy) -->
     <access origin="http://127.0.0.1" subdomains="false"/>

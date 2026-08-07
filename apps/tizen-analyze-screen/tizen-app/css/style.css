@@ -6,7 +6,8 @@ html, body {
     width: 1920px;
     height: 1080px;
     overflow: hidden;
-    background: #0b0f14;
+    background: transparent;
+    /* color: #101418; */
     color: #f2f5f7;
     font-family: "SamsungOne", "Noto Sans", sans-serif;
     font-size: 32px;

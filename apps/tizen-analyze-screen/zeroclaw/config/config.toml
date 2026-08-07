@@ -30,7 +30,7 @@ schema_version = 3
 
 # ── The agent's brain: DGX LLM ────────────────────────────────────────────
 [providers.models.vllm.dgx]
-uri = "http://REPLACE_ME:8000/v1"           # {{LLM_BASE_URL}} (v3 field name is `uri`)
+uri = "http://REPLACE_ME:8000/v1"           # {{LLM_BASE_URL}} 
 model = "REPLACE_ME"                        # {{LLM_MODEL_NAME}}
 wire_api = "chat_completions"
 timeout_secs = 30                           # per LLM turn
@@ -68,8 +68,8 @@ command = "/opt/usr/home/owner/tv-screen-tools"   # pushed by deploy_tv.sh
 
 [mcp.servers.env]
 SCREENSHOT_MODE = "exec"                          # "watch" if the TV blocks subprocess spawn
-SCREENSHOT_BIN = "/opt/usr/home/owner/tizenscreenshot"   # {{PATH_TO_BINARY}}
-SCREENSHOT_OUTPUT = "/tmp/screenshot.png"                # {{SCREENSHOT_OUTPUT_PATH}}
+SCREENSHOT_BIN = "/opt/usr/home/owner/tzcapturesample"   # {{PATH_TO_BINARY}}
+SCREENSHOT_OUTPUT = "/root/capture.png"                # {{SCREENSHOT_OUTPUT_PATH}}
 SCREENSHOT_TIMEOUT_SECS = "10"
 VLM_BASE_URL = "http://REPLACE_ME:8000/v1"               # {{VLM_BASE_URL}}
 VLM_MODEL = "Qwen/Qwen3-VL-8B-Instruct"                  # {{VLM_MODEL_NAME}}

@@ -1,0 +1,11 @@
+/home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/target/armv7-unknown-linux-gnueabihf/release/deps/ascii-09513e9d7a29ac0b.d: /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/lib.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_char.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_str.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_string.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/free_functions.rs
+
+/home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/target/armv7-unknown-linux-gnueabihf/release/deps/libascii-09513e9d7a29ac0b.rlib: /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/lib.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_char.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_str.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_string.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/free_functions.rs
+
+/home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/target/armv7-unknown-linux-gnueabihf/release/deps/libascii-09513e9d7a29ac0b.rmeta: /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/lib.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_char.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_str.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_string.rs /home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/free_functions.rs
+
+/home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/lib.rs:
+/home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_char.rs:
+/home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_str.rs:
+/home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/ascii_string.rs:
+/home/joon/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/ascii-1.1.0/src/free_functions.rs:
