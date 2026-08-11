@@ -2,3 +2,7 @@
 real    0m11.277s
 user    0m0.000s
 sys     0m0.030s
+{"detected_elements":[{"confidence":0.95,"description":"VT 56 - VENEZIA 0 - 2 INTER SERIE A | 2021-2022","name":"scoreboard"},{"confidence":0.9,"description":"Players in white and red kits on the pitch","name":"players"},{"confidence":0.85,"description":"Crowd waving flags in the stands","name":"crowd"}],"error":null,"screen_type":"live_tv","suggested_actions":["Switch to Inter's team channel for player interviews","Check match stats for top scorers","View highlights of Inter's second goal","Poll friends on predicted final score"],"summary":"A live broadcast of a Serie A football match between Venezia and Inter. Inter leads 2-0 in the 56th minute. The scene shows players on the pitch, a goal attempt, and crowd reactions.","title":"Serie A: Venezia vs Inter"}
+real    0m10.693s
+user    0m0.003s
+sys     0m0.021s
