@@ -89,8 +89,8 @@ if errs:
 PY
 }
 
-post_analyze() { # outfile -> echoes http status
-    curl -s -o "$1" -w '%{http_code}' -X POST "$PP/analyze-screen" \
+post_analyze() { # outfile [headerfile] -> echoes http status
+    curl -s -o "$1" -D "${2:-/dev/null}" -w '%{http_code}' -X POST "$PP/analyze-screen" \
          -H 'Content-Type: application/json' \
          -d '{"message": "Analyze what is currently on my screen."}' \
          --max-time 120
@@ -204,6 +204,7 @@ wait_http "http://127.0.0.1:${GW_PORT}/health" "zeroclaw gateway"
 
 say "starting postprocess sidecar"
 POSTPROCESS_PORT="$PP_PORT" GATEWAY_URL="http://127.0.0.1:${GW_PORT}" \
+    SCREENSHOT_OUTPUT="$SHOT_OUT" \
     TOTAL_TIMEOUT_SECS=150 "$PP_BIN" > "$WORK/postprocess.log" 2>&1 &
 PIDS+=($!); disown 2>/dev/null || true
 wait_http "$PP/health" "postprocess"
@@ -212,7 +213,8 @@ pass "full stack up (real zeroclaw + mocks)"
 # ------------------------------------------------------------------- tests
 say "test 1: agent loop happy path"
 llm_mode valid
-STATUS="$(post_analyze "$WORK/r1.json")"
+rm -f "$SHOT_OUT"          # so "fresh capture" cannot be satisfied by a leftover
+STATUS="$(post_analyze "$WORK/r1.json" "$WORK/r1.head")"
 [ "$STATUS" = "200" ] || fail "expected HTTP 200, got $STATUS: $(cat "$WORK/r1.json")"
 assert_schema "$WORK/r1.json" no || fail "schema"
 pass "schema-valid JSON returned"
@@ -232,6 +234,22 @@ curl -sf "$VLM/_calls" | grep -q '"has_image": *true' \
 curl -sf "$LLM/_last_system" | grep -q "screen-analysis assistant" \
     && pass "SOUL.md system prompt reached the agent LLM" \
     || fail "system prompt did not contain SOUL.md content"
+
+say "test 1b: the captured PNG is served back to the TV app"
+grep -qi '^x-screenshot-fresh: *1' "$WORK/r1.head" \
+    || fail "analyze response did not report a fresh capture: $(grep -i x-screenshot "$WORK/r1.head" || true)"
+SHOT_MS="$(grep -i '^x-screenshot-ms:' "$WORK/r1.head" | tr -d '\r' | awk '{print $2}')"
+[ -n "$SHOT_MS" ] && [ "$SHOT_MS" != "0" ] || fail "X-Screenshot-Ms missing/zero"
+pass "analyze response advertised a fresh capture (mtime $SHOT_MS)"
+
+curl -sf "$PP/screenshot-info" | grep -q '"exists": *true' \
+    || fail "/screenshot-info does not see the capture at $SHOT_OUT"
+curl -sf -o "$WORK/shot.png" -w '%{content_type}' "$PP/screenshot?t=$SHOT_MS" \
+    | grep -q 'image/png' || fail "/screenshot did not return image/png"
+head -c 8 "$WORK/shot.png" | od -An -tx1 | tr -d ' \n' | grep -q '^89504e470d0a1a0a' \
+    || fail "/screenshot payload is not a PNG"
+cmp -s "$WORK/shot.png" "$SHOT_OUT" || fail "/screenshot bytes differ from the captured file"
+pass "/screenshot serves the exact PNG the agent analyzed ($(wc -c < "$WORK/shot.png" | tr -d ' ') bytes)"
 
 say "test 2: malformed final answer -> single retry nudge in same session"
 llm_mode malformed_once

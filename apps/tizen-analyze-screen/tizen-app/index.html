@@ -25,6 +25,12 @@
             <div id="state-loading" class="state hidden">
                 <div class="spinner"></div>
                 <p id="loading-text">Capturing screen…</p>
+                <!-- Appears the moment the agent's capture lands on disk,
+                     while the vision model is still reading it. -->
+                <figure id="loading-shot-wrap" class="shot-wrap hidden">
+                    <img id="loading-shot" class="shot" alt="">
+                    <figcaption class="shot-caption">Captured — this is what the agent is analyzing</figcaption>
+                </figure>
             </div>
 
             <!-- Error state -->
@@ -34,19 +40,28 @@
                 <p id="error-message"></p>
             </div>
 
-            <!-- Result state -->
+            <!-- Result state: captured screen on the left, agent's read on the right -->
             <div id="state-result" class="state hidden">
-                <p id="result-type" class="badge"></p>
-                <h2 id="result-title"></h2>
-                <p id="result-summary"></p>
+                <div class="result-body">
+                    <figure id="result-shot-wrap" class="shot-wrap hidden">
+                        <img id="result-shot" class="shot" alt="The captured TV screen">
+                        <figcaption class="shot-caption">What the agent captured</figcaption>
+                    </figure>
 
-                <h3>Detected on screen</h3>
-                <ul id="result-elements"></ul>
+                    <div class="result-text">
+                        <p id="result-type" class="badge"></p>
+                        <h2 id="result-title"></h2>
+                        <p id="result-summary"></p>
 
-                <h3>You could…</h3>
-                <ul id="result-actions"></ul>
+                        <h3>Detected on screen</h3>
+                        <ul id="result-elements"></ul>
 
-                <p id="result-timings" class="timings"></p>
+                        <h3>You could…</h3>
+                        <ul id="result-actions"></ul>
+
+                        <p id="result-timings" class="timings"></p>
+                    </div>
+                </div>
             </div>
 
             <button id="close-btn" class="focusable hidden">Close</button>

@@ -18,7 +18,12 @@
         error: document.getElementById("state-error"),
         errorCode: document.getElementById("error-code"),
         errorMessage: document.getElementById("error-message"),
+        loadingShotWrap: document.getElementById("loading-shot-wrap"),
+        loadingShot: document.getElementById("loading-shot"),
         result: document.getElementById("state-result"),
+        resultText: document.querySelector(".result-text"),
+        resultShotWrap: document.getElementById("result-shot-wrap"),
+        resultShot: document.getElementById("result-shot"),
         resultType: document.getElementById("result-type"),
         resultTitle: document.getElementById("result-title"),
         resultSummary: document.getElementById("result-summary"),
@@ -29,6 +34,10 @@
     };
 
     var busy = false;
+    /* mtime (epoch ms) of the capture this run produced — doubles as the
+     * cache-busting token, so the loading preview and the result image share
+     * one URL and therefore one decoded copy in the browser cache. */
+    var shotToken = 0;
 
     function log(stage, msg) {
         console.log("[" + new Date().toISOString() + "] [" + stage + "] " + msg);
@@ -89,7 +98,61 @@
         showOnly(els.error, true);
     }
 
+    /* ---------- the captured screenshot ---------- */
+
+    /* The token is the capture's mtime: same capture -> same URL -> the copy
+     * preloaded during the wait is reused when the result renders. */
+    function shotUrl(token) {
+        return APP_CONFIG.SCREENSHOT_URL + "?t=" + token;
+    }
+
+    /* Reveal the figure only once the bytes actually decode, so a missing or
+     * broken capture leaves a clean text-only card instead of a torn image. */
+    function showShot(imgEl, wrapEl, token) {
+        if (!token) { return; }
+        var t0 = Date.now();
+        imgEl.onload = function () {
+            wrapEl.classList.remove("hidden");
+            log("screenshot", "displayed " + imgEl.naturalWidth + "x" +
+                imgEl.naturalHeight + " in " + (Date.now() - t0) + " ms");
+        };
+        imgEl.onerror = function () {
+            wrapEl.classList.add("hidden");
+            log("screenshot", "could not load " + shotUrl(token));
+        };
+        imgEl.src = shotUrl(token);
+    }
+
+    function hideShots() {
+        els.loadingShotWrap.classList.add("hidden");
+        els.resultShotWrap.classList.add("hidden");
+    }
+
+    /* While the agent works, ask the sidecar (one stat() per poll, loopback,
+     * fully off the analysis path) whether the capture has landed yet. A file
+     * older than this request belongs to a previous run and is ignored;
+     * `age_ms` comes from the sidecar so no clock comparison is needed. */
+    function watchForShot(t0) {
+        if (!APP_CONFIG.SCREENSHOT_POLL_MS) { return null; }
+        var timer = setInterval(function () {
+            fetch(APP_CONFIG.SCREENSHOT_INFO_URL, { cache: "no-store" })
+                .then(function (r) { return r.json(); })
+                .then(function (info) {
+                    var elapsed = Date.now() - t0;
+                    if (!info || !info.exists || info.age_ms > elapsed + 2000) { return; }
+                    clearInterval(timer);
+                    shotToken = info.mtime_ms;
+                    log("screenshot", "capture ready after " + elapsed + " ms; preloading");
+                    showShot(els.loadingShot, els.loadingShotWrap, shotToken);
+                })
+                .catch(function () { /* sidecar busy — try again next tick */ });
+        }, APP_CONFIG.SCREENSHOT_POLL_MS);
+        return timer;
+    }
+
     function showResult(data, timings) {
+        showShot(els.resultShot, els.resultShotWrap, shotToken);
+
         els.resultType.textContent = data.screen_type || "unknown";
         els.resultTitle.textContent = data.title || "(no title)";
         els.resultSummary.textContent = data.summary || "";
@@ -129,7 +192,10 @@
         els.analyzeBtn.disabled = true;
         var t0 = Date.now();
         log("button_press", "analyze requested");
+        shotToken = 0;
+        hideShots();
         showLoading(APP_CONFIG.PROGRESS_STAGES[0][0]);
+        var shotTimer = watchForShot(t0);
 
         // Agent loops take longer than a fixed pipeline: rotate honest
         // progress hints and show elapsed time so the wait feels alive.
@@ -156,6 +222,14 @@
         }).then(function (resp) {
             log("gateway_response", "HTTP " + resp.status + " after " + (Date.now() - t0) + " ms");
             var timings = resp.headers.get("X-Timings-Ms");
+            // The sidecar compared the capture file's mtime before and after
+            // the agent turn: trust its verdict over whatever polling found.
+            if (resp.headers.get("X-Screenshot-Fresh") === "1") {
+                shotToken = Number(resp.headers.get("X-Screenshot-Ms")) || shotToken;
+            } else if (resp.headers.get("X-Screenshot-Fresh") === "0") {
+                log("screenshot", "agent produced no new capture this run");
+                shotToken = 0;
+            }
             return resp.json().then(function (data) {
                 return { data: data, timings: timings };
             });
@@ -179,11 +253,23 @@
             );
         }).then(function () {
             clearInterval(labelTimer);
+            if (shotTimer) { clearInterval(shotTimer); }
             if (abortTimer) { clearTimeout(abortTimer); }
             busy = false;
             els.analyzeBtn.disabled = false;
             log("done", "total " + (Date.now() - t0) + " ms");
         });
+    }
+
+    /* Scroll the result's text column by one "page". Returns false when the
+     * result is not showing or everything already fits, so the caller can fall
+     * back to the normal focus behaviour. */
+    function scrollResultText(direction) {
+        var box = els.resultText;
+        if (!box || els.result.classList.contains("hidden")) { return false; }
+        if (box.scrollHeight <= box.clientHeight) { return false; }
+        box.scrollTop += direction * Math.round(box.clientHeight * 0.8);
+        return true;
     }
 
     /* ---------- input handling ---------- */
@@ -210,10 +296,18 @@
             case KEY.RETURN: // Samsung remote "back"
                 if (overlayOpen) { hideOverlay(); e.preventDefault(); }
                 break;
-            case KEY.LEFT:
-            case KEY.RIGHT:
             case KEY.UP:
             case KEY.DOWN:
+                // With the capture taking a column of its own, a long answer
+                // can overflow the text column. UP/DOWN scroll it — there is
+                // no pointer on a TV, so otherwise that text is unreachable.
+                if (scrollResultText(e.keyCode === KEY.DOWN ? 1 : -1)) {
+                    e.preventDefault();
+                    break;
+                }
+                /* falls through to focus restore when there is nothing to scroll */
+            case KEY.LEFT:
+            case KEY.RIGHT:
                 // Single-button-per-state UI: arrows just restore focus.
                 (overlayOpen && !els.closeBtn.classList.contains("hidden")
                     ? els.closeBtn : els.analyzeBtn).focus();

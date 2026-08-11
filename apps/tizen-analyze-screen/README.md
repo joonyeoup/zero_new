@@ -23,13 +23,20 @@ button press
    ▼
 Tizen web app ──POST──▶ postprocess sidecar ──POST /webhook──▶ ZeroClaw gateway
 (tizen-app/)            (postprocess/, :8787)                  (agent loop, :42617)
-   ▲                        │ validates JSON,                      │
-   │                        │ 1 retry max                          ▼
-   └──── result overlay ◀───┘                            LLM on DGX decides:
-                                                          1. call tv__screenshot ──▶ ./tizenscreenshot
-                                                          2. call tv__analyze_image ─▶ VLM (Qwen3-VL)
-                                                          3. answer with schema JSON
+   ▲   ▲                    │ validates JSON,                      │
+   │   │                    │ 1 retry max                          ▼
+   │   └── GET /screenshot ─┤                              LLM on DGX decides:
+   │       (the captured    │                               1. call tv__screenshot ──▶ ./tizenscreenshot
+   │        PNG, off the    │                                                          writes capture.png
+   │        critical path)  │                               2. call tv__analyze_image ─▶ VLM (Qwen3-VL)
+   └──── result overlay ◀───┘                               3. answer with schema JSON
 ```
+
+The app also *shows the user the screenshot the agent took*. It polls
+`GET /screenshot-info` (one `stat()`, ~0.5 ms) while the agent works, and the
+moment the capture lands it previews it under the spinner — typically many
+seconds before the VLM finishes. The same URL then carries the result view, so
+the image is already decoded and costs nothing at render time.
 
 One button press = **3 LLM turns + 2 tool executions + 1 VLM call**, all
 chosen by the model.
@@ -38,8 +45,8 @@ chosen by the model.
 
 | Piece | Where | What it actually does |
 |---|---|---|
-| **Tizen web app** | `tizen-app/` | The 10-foot UI. One button, remote-control ENTER handling, rotating "what the agent is doing" status lines, a large-font result overlay. Calls `http://127.0.0.1:8787/analyze-screen`. |
-| **Postprocess sidecar** | `postprocess/` | ~230 lines of Rust, no LLM. Forwards the message to ZeroClaw's gateway, then parses + schema-validates the agent's final text. If invalid: sends exactly ONE follow-up message into the *same* conversation ("your response was not valid JSON…") and validates once more. Still invalid → structured error object. Also logs per-stage latency. |
+| **Tizen web app** | `tizen-app/` | The 10-foot UI. One button, remote-control ENTER handling, rotating "what the agent is doing" status lines, and a result overlay showing **the captured screen next to the agent's read of it**. Calls `http://127.0.0.1:8787/analyze-screen`; loads the capture from `/screenshot`. UP/DOWN scroll the text column when an answer runs long. |
+| **Postprocess sidecar** | `postprocess/` | ~290 lines of Rust, no LLM. Forwards the message to ZeroClaw's gateway, then parses + schema-validates the agent's final text. If invalid: sends exactly ONE follow-up message into the *same* conversation ("your response was not valid JSON…") and validates once more. Still invalid → structured error object. Also logs per-stage latency, and serves the capture PNG back to the app (`GET /screenshot`, `GET /screenshot-info`). |
 | **ZeroClaw gateway** | already on the TV | The agent runtime (v0.8.2). Receives the message, runs the agent loop against the DGX LLM, executes tools, returns the final text. We only *configure* it — no ZeroClaw code is modified. |
 | **MCP tool server** | `zeroclaw/tools-mcp/` | A small Rust binary ZeroClaw spawns over stdio. Registers the two custom tools: `screenshot` (runs the existing `tizenscreenshot` binary, 10s timeout, or *watches* for the PNG if the TV forbids spawning subprocesses) and `analyze_image` (downscales to ≤1280px long edge with a pure-Rust image crate, base64-encodes, calls the VLM's OpenAI-style endpoint, returns its text). Everything configured via env vars — nothing hardcoded. |
 | **Agent system prompt** | `zeroclaw/workspace/SOUL.md` | Tells the agent it's a TV screen-analysis assistant, that it has these two tools and must use them when asked about the screen, and that its final answer must be ONLY a JSON object matching the schema (embedded verbatim). |
@@ -64,6 +71,10 @@ chosen by the model.
 3. **Unrepairable answer** — the mock returns junk every time; the client
    gets HTTP 422 with a structured `AGENT_OUTPUT_INVALID` error object.
 
+Plus **1b — the screenshot round-trip**: the analyze response reports a *fresh*
+capture (`X-Screenshot-Fresh: 1`), `/screenshot-info` sees it, and `/screenshot`
+returns bytes `cmp`-identical to the PNG the agent actually analyzed.
+
 Requirements: the `zeroclaw` binary built at the repo root
 (`cargo build --release --bin zeroclaw`) and Python with `fastapi`+`uvicorn`
 for the mocks (a venv works — put its `bin/` on `PATH`).
@@ -84,7 +95,7 @@ All placeholders (no secrets or URLs are hardcoded anywhere):
 | `{{VLM_BASE_URL}}` | `[mcp.servers.env].VLM_BASE_URL` | vLLM Qwen3-VL endpoint — called *by the tool*, never by the loop |
 | `{{VLM_MODEL_NAME}}` | `[mcp.servers.env].VLM_MODEL` | VLM model |
 | `{{PATH_TO_BINARY}}` | `[mcp.servers.env].SCREENSHOT_BIN` | `tizenscreenshot` location on the TV |
-| `{{SCREENSHOT_OUTPUT_PATH}}` | `[mcp.servers.env].SCREENSHOT_OUTPUT` | where it writes its PNG |
+| `{{SCREENSHOT_OUTPUT_PATH}}` | `[mcp.servers.env].SCREENSHOT_OUTPUT` **and** the sidecar's `SCREENSHOT_OUTPUT` env | where the tool writes its PNG. **Both processes must be given the same path** — the tool writes it, the sidecar serves it to the app. If they disagree, everything still works except the picture (`/screenshot-info` returns `exists:false`). |
 | `{{ZEROCLAW_PORT}}` | `[gateway].port` | gateway port (default 42617) |
 | `TV_IP` | `deploy_tv.sh` env | the TV's LAN address |
 
@@ -183,6 +194,26 @@ Follow-on repairs in the same session:
 | `test_e2e.sh` preflight for `fastapi`/`uvicorn` | The mocks died with a bare `ModuleNotFoundError` before; now the script fails with an actionable message. |
 | `STATUS.md` added; this README rewritten | The README described the deleted v1 architecture. STATUS.md is the living goal/done/todo document. |
 
+### v2.2 — showing the captured screen on the TV (2026-08-11)
+
+The demo told you what the agent saw but never showed it. This adds the
+picture, under a hard constraint: **do not lengthen the agent loop.**
+
+| Change | Purpose |
+|---|---|
+| **`GET /screenshot`** on the sidecar | Serves the capture PNG as-is (no decode, no resize — the TV's browser scales it). `Cache-Control: private, max-age=300`, and callers cache-bust with `?t=<mtime>`, so a given URL's bytes never change and the browser may reuse them. |
+| **`GET /screenshot-info`** on the sidecar | One `stat()` → `{exists, mtime_ms, age_ms, bytes}`. `age_ms` is computed server-side so the TV never compares its own clock to file timestamps. |
+| **`X-Screenshot-Fresh` / `X-Screenshot-Ms`** response headers | The sidecar stats the capture file before and after the agent turn. `Fresh: 1` means the agent produced a *new* PNG this request; `0` means a leftover from an earlier run, which the app then refuses to show. Two `stat()` calls, ~0.26 ms total. |
+| **App previews the capture while the agent is still working** | `js/main.js` polls `/screenshot-info` once a second *during* the wait and shows the image the moment it lands — typically many seconds before the VLM returns. The result view reuses the same URL, so the decoded image is already cached: **zero added latency at render time.** |
+| **Result overlay became two columns** | Capture on the left, the agent's read on the right (`index.html`, `css/style.css`). Card widened 1400→1560px and the type scale trimmed so a typical answer fits with no scrolling. |
+| **UP/DOWN scroll the text column** | Consequence of the narrower text column: a long answer can overflow, and a TV remote has no pointer. Arrows scroll when there is overflow, and fall back to the old focus-restore behaviour when there isn't. |
+| **`SCREENSHOT_OUTPUT` defaults aligned** | The tool server wrote `/tmp/screenshot.png` but its own `analyze_image` fallback (and the new sidecar default) said `/tmp/capture.png`. Harmless while the env var is set everywhere, silently pictureless when it isn't. Both are `/tmp/screenshot.png` now. |
+| **Deploy scripts pass `SCREENSHOT_OUTPUT` to the sidecar** | It previously started without it, so on the TV `/screenshot` would have 404'd even with everything else correct. |
+
+Cost, measured on loopback: `/screenshot-info` **0.51 ms/call** vs a 0.25 ms
+baseline `/health`; serving a 12 KB PNG **0.46 ms**. The analysis request itself
+gains two `stat()` calls and never waits on image bytes.
+
 ---
 
 ## Honest limits & open items
@@ -216,3 +247,7 @@ Follow-on repairs in the same session:
 | Tizen fetch blocked | `config.xml` needs internet privilege + `allow-navigation` for localhost (already set) |
 | vLLM 413/400 on the image | Keep `DOWNSCALE_ENABLED=true` (1280px long edge) or raise vLLM body limits |
 | Total timeout | Raise postprocess `TOTAL_TIMEOUT_SECS` + app `REQUEST_TIMEOUT_MS` together; check per-stage logs for the slow leg |
+| Analysis works but no screenshot appears | The sidecar's `SCREENSHOT_OUTPUT` differs from `[mcp.servers.env].SCREENSHOT_OUTPUT` → `curl /screenshot-info`; `exists:false` confirms it. Start the sidecar with the same path |
+| Screenshot shown is from the *previous* press | Should not happen — the app only shows a capture the sidecar marked `X-Screenshot-Fresh: 1`. If it does, check the TV's filesystem gives the PNG a new mtime on each write |
+| Result text looks cut off | A long answer overflows the column; press UP/DOWN on the remote to scroll it |
+| Big captures feel slow to appear | The preview is loaded during the agent's own wait, so it costs nothing at render — but a huge PNG still takes decode time on the TV. Have `tizenscreenshot` write a smaller PNG if it matters |

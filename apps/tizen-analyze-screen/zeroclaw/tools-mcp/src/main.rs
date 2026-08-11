@@ -337,7 +337,9 @@ fn resolve_image_path(args: &Value) -> Result<PathBuf, String> {
             return Ok(p);
         }
     }
-    let fixed = PathBuf::from(env_or("SCREENSHOT_OUTPUT", "/tmp/capture.png"));
+    // Same default as run_screenshot() writes — these two must never drift, or
+    // the fallback (and the sidecar's GET /screenshot) points at nothing.
+    let fixed = PathBuf::from(env_or("SCREENSHOT_OUTPUT", "/tmp/screenshot.png"));
     if fixed.is_file() {
         return Ok(fixed);
     }

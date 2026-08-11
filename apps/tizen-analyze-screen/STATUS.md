@@ -1,6 +1,6 @@
 # STATUS — Agentic "Analyze Screen" on Tizen TV via ZeroClaw
 
-_Last updated: 2026-07-08 (session 3 — agentic refactor debugging)._
+_Last updated: 2026-08-11 (session 4 — screenshot display on the TV)._
 
 ## Goal
 
@@ -28,7 +28,17 @@ ZeroClaw gateway `/webhook` (real agent loop) → MCP stdio server
 - **`mock/`** — `mock_llm_server.py` (plays the agent deterministically;
   now speaks BOTH native OpenAI tool-calling and ZeroClaw's XML fallback),
   `mock_vlm_server.py`, `stub_tizenscreenshot.sh`.
-- **`tizen-app/`** — 10-foot UI web app (unchanged from earlier session).
+- **`tizen-app/`** — 10-foot UI web app. Now also **displays the screenshot
+  the agent captured**: previewed under the spinner as soon as the PNG lands
+  (while the VLM is still reading it), then shown beside the analysis in the
+  result overlay. UP/DOWN scroll the text column for long answers.
+- **Screenshot serving** (session 4) — sidecar `GET /screenshot` +
+  `GET /screenshot-info`, and `X-Screenshot-Fresh` / `X-Screenshot-Ms` headers
+  on `/analyze-screen` so the app never shows a stale capture. Deliberately
+  off the critical path: measured 0.51 ms per poll and 0.46 ms to serve a
+  12 KB PNG; the analysis response adds only two `stat()` calls (~0.26 ms).
+  Covered by e2e test 1b (`/screenshot` bytes `cmp`-identical to the analyzed
+  PNG).
 - **Debugged the real ZeroClaw 0.8.2 gateway agent loop end-to-end** (this
   session). Key findings, all now fixed in the local debug stack:
   1. Gateway chat **requires `[agents.<alias>]`** + resolvable
@@ -73,6 +83,11 @@ Remaining (needs the user / real hardware):
       ready.
 - [ ] On-TV validation: run `deploy_tv.sh`, confirm subprocess spawn
       (else `SCREENSHOT_MODE=watch`), fill real LLM/VLM URLs.
+- [ ] On-TV check for the screenshot display: start the sidecar with the SAME
+      `SCREENSHOT_OUTPUT` as `[mcp.servers.env]` (the deploy scripts now print
+      this), then `curl 127.0.0.1:8787/screenshot-info` after one press. Also
+      confirm the TV's browser decodes a full-resolution capture quickly
+      enough — verified locally at 1920x1080, not yet on real panel hardware.
 - [ ] Confirm the DGX vLLM serve flags include `--enable-auto-tool-choice`
       + a `--tool-call-parser` matching the model (native tool calling is
       required — see finding 2).

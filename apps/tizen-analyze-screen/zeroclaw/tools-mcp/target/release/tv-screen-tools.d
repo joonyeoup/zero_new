@@ -1,1 +1,1 @@
-/Users/joonyeoup.k1/Desktop/Intern/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/release/tv-screen-tools: /Users/joonyeoup.k1/Desktop/Intern/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/src/main.rs
+/Users/joonyeoupkim/Desktop/personal_project/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/release/tv-screen-tools: /Users/joonyeoupkim/Desktop/personal_project/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/src/main.rs

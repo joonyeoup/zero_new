@@ -66,13 +66,16 @@ button.focusable:disabled { background: #3a4653; color: #8a97a3; }
 #overlay.hidden, .hidden { display: none !important; }
 
 #overlay-card {
-    width: 1400px;
-    max-height: 900px;
+    /* Wider than the pre-screenshot layout: the capture now takes a column of
+       its own, and the text needs the rest. Still inside the TV's 5% overscan
+       margin on a 1920-wide panel. */
+    width: 1560px;
+    max-height: 940px;
     overflow: hidden;
     background: #121a23;
     border: 2px solid #2a3947;
     border-radius: 24px;
-    padding: 56px 64px;
+    padding: 44px 56px;
     display: flex;
     flex-direction: column;
     gap: 28px;
@@ -99,6 +102,64 @@ button.focusable:disabled { background: #3a4653; color: #8a97a3; }
     font-size: 28px;
 }
 
+/* ---------- Captured screenshot ---------- */
+
+/* Tizen 6's browser is Chromium M76: no `aspect-ratio`, no flex `gap`.
+   Heights are fixed explicitly and spacing uses margins. */
+.shot {
+    display: block;
+    width: 100%;
+    /* The TV writes a full-resolution PNG; the browser scales it down.
+       Reserving the 16:9 box keeps the card from jumping when the image
+       finally decodes. */
+    object-fit: contain;
+    background: #0a1016;
+    border: 2px solid #2a3947;
+    border-radius: 14px;
+}
+.shot-caption {
+    margin-top: 12px;
+    font-size: 22px;
+    color: #7f95a8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    text-align: center;
+}
+
+/* Loading: a modest preview under the spinner. The top margin is explicit —
+   the card's flex `gap` does not apply inside a state, and Tizen's M76 does
+   not support it at all, so without this the caption text and the image
+   collide. */
+#loading-shot-wrap {
+    width: 640px;
+    margin: 28px auto 0;
+}
+#loading-shot { height: 360px; }        /* 640 x 9/16 */
+
+/* Result: screenshot column + text column. */
+.result-body {
+    display: flex;
+    align-items: flex-start;
+    overflow: hidden;
+}
+#result-shot-wrap {
+    width: 560px;
+    flex: 0 0 560px;
+    margin-right: 40px;
+}
+#result-shot { height: 315px; }         /* 560 x 9/16 */
+/* The text column holds variable-length model output. It is sized to fit a
+   typical answer without scrolling; anything longer scrolls with the remote's
+   UP/DOWN keys (see main.js) — a TV has no other way to reach it. */
+.result-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-height: 752px;
+    overflow-y: auto;
+}
+.result-text > * { margin-bottom: 14px; }
+.result-text > *:last-child { margin-bottom: 0; }
+
 /* Result */
 .badge {
     align-self: flex-start;
@@ -112,7 +173,9 @@ button.focusable:disabled { background: #3a4653; color: #8a97a3; }
     text-transform: uppercase;
     letter-spacing: 2px;
 }
-#result-title { font-size: 56px; }
+/* Trimmed from 56px when the capture took a column: a typical answer now fits
+   the text column without scrolling, still well above 10-foot legibility. */
+#result-title { font-size: 48px; }
 #result-summary { color: #c4d2dd; line-height: 1.45; }
 
 #state-result h3 {
@@ -124,7 +187,7 @@ button.focusable:disabled { background: #3a4653; color: #8a97a3; }
 }
 #state-result ul { list-style: none; }
 #state-result li {
-    padding: 10px 0;
+    padding: 8px 0;
     border-bottom: 1px solid #22303d;
     font-size: 30px;
 }
