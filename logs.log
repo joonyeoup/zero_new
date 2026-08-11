@@ -1,11 +1,1279 @@
-{"detected_elements":[{"confidence":0.95,"description":"Blonde woman holding a crossbow on the left","name":"woman_with_crossbow"},{"confidence":0.9,"description":"Man in baseball cap and hoodie holding a rifle","name":"man_with_rifle"},{"confidence":0.9,"description":"Rugged man in a vest with a knife at his hip","name":"man_with_knife"},{"confidence":0.8,"description":"Fourth character's back partially visible on the right","name":"fourth_character"},{"confidence":0.85,"description":"Scene takes place outdoors near a guardrail","name":"outdoor_setting"}],"error":null,"screen_type":"live_tv","suggested_actions":["Pause to identify the drama series","Rewind to catch missed dialogue","Check guide for next episode time","Take screenshot to share with friends","Switch to live TV for news update"],"summary":"A scene from a drama series shows three characters outdoors near a guardrail: a blonde woman with a crossbow, a man with a rifle, and a rugged man with a knife. A fourth person's back is visible facing them.","title":"Drama Series Scene"}
-real    0m11.277s
-user    0m0.000s
-sys     0m0.030s
-{"detected_elements":[{"confidence":0.95,"description":"VT 56 - VENEZIA 0 - 2 INTER SERIE A | 2021-2022","name":"scoreboard"},{"confidence":0.9,"description":"Players in white and red kits on the pitch","name":"players"},{"confidence":0.85,"description":"Crowd waving flags in the stands","name":"crowd"}],"error":null,"screen_type":"live_tv","suggested_actions":["Switch to Inter's team channel for player interviews","Check match stats for top scorers","View highlights of Inter's second goal","Poll friends on predicted final score"],"summary":"A live broadcast of a Serie A football match between Venezia and Inter. Inter leads 2-0 in the 56th minute. The scene shows players on the pitch, a goal attempt, and crowd reactions.","title":"Serie A: Venezia vs Inter"}
-real    0m10.693s
-user    0m0.003s
-sys     0m0.021s
-{"detected_elements":[{"confidence":0.95,"description":"First Things First sports commentary show on OT network","name":"sports_program"},{"confidence":0.9,"description":"Philadelphia Eagles players including Jalen Hurts (No. 1) practicing outdoors","name":"team_players"},{"confidence":0.85,"description":"Three commentators in inset boxes, one in brown suit, two in dark suits with pink ties","name":"commentators"},{"confidence":0.8,"description":"Outdoor football practice session footage being analyzed","name":"practice_session"},{"confidence":0.85,"description":"Jalen Hurts wearing jersey number 1 visible on screen","name":"player_number"}],"error":null,"screen_type":"live_tv","suggested_actions":["Switch to full-screen practice footage for better player analysis","Check the show's website for today's sports debate topics","Look up Jalen Hurts latest stats during practice session","Pause to discuss the commentators opinions with family members","Search for Eagles practice schedule updates on official team site"],"summary":"A sports TV broadcast of First Things First on OT is currently airing. The screen shows Philadelphia Eagles players, including Jalen Hurts, during an outdoor practice session. Three commentators are visible in inset boxes discussing the game.","title":"First Things First on OT"
-{"detected_elements":[{"confidence":0.95,"description":"Fighter in red shorts (O’Malley) facing off","name":"fighter_red"},{"confidence":0.92,"description":"Fighter with green-and-pink hair in black shorts (Dvalishvili)","name":"fighter_hair"},{"confidence":0.88,"description":"Referee standing to the left of the fighters","name":"referee"},{"confidence":0.85,"description":"Crypto.com and Monster Energy logos on cage and mat","name":"sponsor_logo"}],"error":null,"screen_type":"live_tv","suggested_actions":["Switch to a different sport if not into MMA","Check fighter stats for O’Malley vs Dvalishvili","Pause the broadcast to grab snacks","Look up betting odds for the current round","Toggle subtitles if audio is unclear"],"summary":"A UFC main event fight is live with two fighters facing off in the octagon. One fighter wears red shorts (O’Malley) while the other has green-and-pink hair in black shorts (Dvalishvili). The referee is positioned nearby and sponsor logos such as Crypto.com and Monster Energy are visible around the cage.","title":"UFC Main Event Fight"}
-{"detected_elements":[{"confidence":0.95,"description":"LIV 0-0 RMA, 38th minute","name":"scoreboard"},{"confidence":0.98,"description":"Green field with players in red and white kits","name":"soccer_pitch"},{"confidence":0.85,"description":"GRUBHUB advertising boards along sidelines","name":"ad_banner"},{"confidence":0.9,"description":"CBS Sports channel branding","name":"broadcast_logo"}],"error":null,"screen_type":"live_tv","suggested_actions":["Check if Real Madrid has a penalty kick coming up","Look for player substitutions in the second half","Search for halftime statistics breakdown","Find nearby sports bars showing the match","Set a reminder for kickoff if match hasn't started"],"summary":"A live soccer match between Liverpool and Real Madrid is being broadcast on CBS Sports, currently 0-0 in the 38th minute. Players in red and white kits are actively competing on the pitch with Grubhub advertising visible on the sidelines.","title":"Liverpool vs Real Madrid Soccer Match"}
+# ZeroClaw Architecture Overview
+
+A comprehensive guide to understanding how the ZeroClaw autonomous agent codebase works.
+
+---
+
+## Table of Contents
+
+1. [System Overview](#system-overview)
+2. [Codebase Structure](#codebase-structure)
+3. [Core Components](#core-components)
+4. [Detailed Crate Documentation](#detailed-crate-documentation)
+5. [Data Flow](#data-flow)
+6. [Video Analysis Pipeline](#video-analysis-pipeline)
+7. [Extension Guide](#extension-guide)
+8. [Configuration Reference](#configuration-reference)
+9. [Deployment](#deployment)
+
+---
+
+## System Overview
+
+### What is ZeroClaw?
+
+ZeroClaw is a **Rust-first autonomous agent runtime** optimized for:
+- **Performance** - Native code, minimal overhead
+- **Efficiency** - Token-aware, cost-conscious
+- **Stability** - Trait-driven, modular architecture
+- **Extensibility** - Plugin system, custom tools/channels
+- **Sustainability** - Resource monitoring, rate limiting
+- **Security** - Sandbox execution, access control
+
+### Core Design Principles
+
+1. **Trait-Driven Architecture** - All extensions implement traits from `zeroclaw-api`
+2. **Modular by Default** - Each crate has a single responsibility
+3. **Security First** - Every action goes through security policy validation
+4. **Cost Awareness** - Token tracking, budget enforcement
+5. **Observability** - Comprehensive logging, tracing, metrics
+
+### High-Level Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER INTERFACES                                    │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   CLI       │  │   Gateway   │  │   TUI       │  │   Channels  │        │
+│  │  (zeroclaw) │  │  (REST/WS)  │  │ (Onboarding)│  │(Slack,etc.) │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         ZEROCLAW AGENT (Rust)                                │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │  Agent Loop                                                          │    │
+│  │  - Message processing                                                │    │
+│  │  - LLM integration                                                   │    │
+│  │  - Tool orchestration                                                │    │
+│  │  - Context management                                                │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   Skills    │  │   Tools     │  │  Memory     │  │  Security   │        │
+│  │  (Open/     │  │  (Built-in  │  │  (SQLite/   │  │  (Sandbox/  │        │
+│  │  Custom)    │  │  + Skills)  │  │  Vector)    │  │  Policy)    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         EXTERNAL INTEGRATIONS                                │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
+│  │   LLM       │  │   VLM       │  │  Hardware   │  │  Web        │        │
+│  │  Providers  │  │  Providers  │  │  (GPIO/USB) │  │  Services   │        │
+│  │  (Ollama,   │  │  (qwen-vl)  │  │  (STM32,    │  │  (APIs,     │        │
+│  │  OpenAI)    │  │             │  │  RPi)       │  │  Search)    │        │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘        │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Codebase Structure
+
+### Root Directory
+
+```
+zeroclaw/
+├── src/                      # Main binary entry points
+│   ├── main.rs               # CLI entrypoint
+│   └── lib.rs                # Library re-exports
+├── crates/                   # All workspace crates
+│   ├── zeroclaw-api/         # Trait definitions (CORE)
+│   ├── zeroclaw-config/      # Configuration schema
+│   ├── zeroclaw-providers/   # LLM/VLM providers
+│   ├── zeroclaw-runtime/     # Agent loop, security, SOP
+│   ├── zeroclaw-tools/       # Built-in tools
+│   ├── zeroclaw-channels/    # Messaging integrations
+│   ├── zeroclaw-memory/      # Memory backends
+│   ├── zeroclaw-infra/       # Shared infrastructure
+│   ├── zeroclaw-hardware/    # Hardware peripherals
+│   ├── zeroclaw-plugins/     # WASM plugin system
+│   ├── zeroclaw-gateway/     # REST/WebSocket API
+│   ├── zeroclaw-tui/         # TUI onboarding
+│   ├── zeroclaw-macros/      # Derive macros
+│   └── zeroclaw-tool-call-parser/  # Tool call parsing
+├── apps/                     # Standalone applications
+├── web/                      # Web UI components
+├── docs/                     # Documentation
+├── tests/                    # Integration tests
+├── scripts/                  # Utility scripts
+└── dev/                      # Development tools
+```
+
+### Crate Dependencies
+
+```
+zeroclaw (binary)
+    ├── zeroclaw-runtime
+    │   ├── zeroclaw-api
+    │   ├── zeroclaw-config
+    │   ├── zeroclaw-providers
+    │   ├── zeroclaw-tools
+    │   ├── zeroclaw-memory
+    │   └── zeroclaw-infra
+    ├── zeroclaw-gateway
+    └── zeroclaw-tui
+
+zeroclaw-tools
+    ├── zeroclaw-api
+    └── zeroclaw-config
+
+zeroclaw-providers
+    ├── zeroclaw-api
+    └── zeroclaw-config
+
+zeroclaw-channels
+    ├── zeroclaw-api
+    ├── zeroclaw-config
+    └── zeroclaw-tools
+```
+
+---
+
+## Core Components
+
+### 1. ZeroClaw Agent (Rust Binary)
+
+**Location:** `src/main.rs`, `crates/zeroclaw-runtime/`
+
+The agent is the core orchestrator that:
+- Receives messages from channels/CLI/gateway
+- Processes through LLM with tools
+- Manages conversation context
+- Executes tools safely
+- Stores memories
+
+**Key Modules:**
+```
+crates/zeroclaw-runtime/src/
+├── agent/
+│   ├── loop_.rs          # Main agent loop
+│   ├── context.rs        # Context management
+│   └── history.rs        # Message history
+├── tools/
+│   ├── mod.rs            # Tool registry
+│   ├── skill_tool.rs     # Skill shell tool
+│   ├── shell.rs          # Shell execution
+│   └── ...               # Other tools
+├── security/
+│   ├── mod.rs            # Security policy
+│   ├── detect.rs         # Threat detection
+│   └── sandbox.rs        # Sandbox execution
+├── skills/
+│   ├── mod.rs            # Skill loading
+│   └── registry.rs       # Skill registry
+├── memory/
+│   └── ...               # Memory integration
+└── observability/
+    └── ...               # Logging, tracing
+```
+
+### 2. Skills System
+
+**Location:** `~/open-skills/skills/`, `crates/zeroclaw-runtime/src/skills/`
+
+Skills are user-defined capabilities that extend the agent:
+
+```toml
+# ~/open-skills/skills/event-inference/SKILL.toml
+[skill]
+name = "event-inference"
+description = "Analyze faces in videos to infer events"
+version = "3.0.0"
+
+prompts = [
+    "What event is happening",
+    "analyze this video",
+    ...
+]
+
+[[tools]]
+name = "analyze_media"
+kind = "shell"
+command = "~/.zeroclaw/venv/bin/python3 ~/.zeroclaw/video_event_analyzer.py {{file}}"
+```
+
+**How Skills Work:**
+1. Skills loaded from `~/open-skills/skills/` at startup
+2. Each skill's `[[tools]]` becomes a `SkillShellTool`
+3. LLM can invoke skill tools by name
+4. Tool executes as shell command with timeout (300s)
+
+### 3. Tool Framework
+
+**Location:** `crates/zeroclaw-api/src/tool.rs`, `crates/zeroclaw-tools/`
+
+All tools implement the `Tool` trait:
+
+```rust
+#[async_trait]
+pub trait Tool: Send + Sync {
+    fn name(&self) -> &str;
+    fn description(&self) -> &str;
+    fn parameters_schema(&self) -> serde_json::Value;
+    async fn execute(&self, args: serde_json::Value) -> anyhow::Result<ToolResult>;
+}
+```
+
+**Built-in Tools:**
+| Tool | Purpose |
+|------|---------|
+| `shell` | Execute shell commands |
+| `file_read` | Read files |
+| `file_write` | Write files |
+| `file_edit` | Edit files |
+| `glob_search` | Search files by pattern |
+| `content_search` | Search file contents |
+| `memory_recall` | Retrieve memories |
+| `memory_store` | Store memories |
+| `browser` | Web automation |
+| `web_search` | Web search |
+| `web_fetch` | Fetch web pages |
+| `cron_*` | Cron job management |
+| `delegate` | Delegate to sub-agents |
+
+### 4. Provider System (LLM/VLM)
+
+**Location:** `crates/zeroclaw-api/src/provider.rs`, `crates/zeroclaw-providers/`
+
+Providers abstract LLM/VLM APIs:
+
+```rust
+#[async_trait]
+pub trait Provider: Send + Sync {
+    async fn chat(&self, messages: Vec<Message>) -> Result<ChatResponse>;
+    async fn chat_with_tools(&self, messages: Vec<Message>, tools: Vec<ToolSpec>) -> Result<ChatResponse>;
+}
+```
+
+**Supported Providers:**
+- `ollama` - Local Ollama server
+- `custom` - OpenAI-compatible endpoints (llama.cpp)
+- `openai` - OpenAI API
+- `anthropic` - Anthropic API
+- `google` - Google AI
+- `azure` - Azure OpenAI
+
+**Provider Configuration:**
+```toml
+[providers]
+fallback = "custom:http://localhost:8000/v1"
+
+[providers.models."custom:http://localhost:8000/v1"]
+model = "qwen-vl"
+base_url = "http://localhost:8000/v1"
+api_key = "not-needed"
+```
+
+### 5. Memory System
+
+**Location:** `crates/zeroclaw-api/src/memory_traits.rs`, `crates/zeroclaw-memory/`
+
+Memory backends implement the `Memory` trait:
+
+```rust
+#[async_trait]
+pub trait Memory: Send + Sync {
+    async fn store(&self, entry: MemoryEntry) -> Result<String>;
+    async fn recall(&self, query: &str, namespace: Option<&str>) -> Result<Vec<MemoryEntry>>;
+    async fn delete(&self, id: &str) -> Result<()>;
+    async fn hygiene(&self) -> Result<HygieneReport>;
+}
+```
+
+**Memory Backends:**
+| Backend | Description |
+|---------|-------------|
+| `sqlite` | SQLite database (default) |
+| `markdown` | Markdown files |
+| `postgres` | PostgreSQL with pgvector |
+| `qdrant` | Qdrant vector database |
+| `embeddings` | Embedding-based retrieval |
+| `vector_merge` | Hybrid vector + keyword |
+
+### 6. Channel System
+
+**Location:** `crates/zeroclaw-api/src/channel.rs`, `crates/zeroclaw-channels/`
+
+Channels are messaging platform integrations:
+
+```rust
+#[async_trait]
+pub trait Channel: Send + Sync {
+    async fn connect(&self) -> Result<()>;
+    async fn send(&self, message: ChannelMessage) -> Result<()>;
+    async fn disconnect(&self) -> Result<()>;
+}
+```
+
+**Supported Channels (30+):**
+- Slack
+- Discord
+- Telegram
+- WhatsApp
+- Microsoft Teams
+- Email (IMAP/SMTP)
+- SMS (Twilio)
+- LINE
+- WeChat
+- And more...
+
+### 7. Gateway API
+
+**Location:** `crates/zeroclaw-gateway/`
+
+REST/WebSocket API for external integration:
+
+**Endpoints:**
+```
+POST   /api/v1/pair          - Pair new device
+POST   /api/v1/webhook       - Webhook receiver
+GET    /api/v1/sessions      - List sessions
+POST   /api/v1/sessions      - Create session
+GET    /api/v1/sessions/:id  - Get session
+POST   /api/v1/sessions/:id/messages  - Send message
+WS     /ws/chat              - WebSocket chat
+```
+
+**Authentication:**
+- Pairing code flow for new devices
+- Token-based authentication
+- Rate limiting per token
+
+### 8. Security System
+
+**Location:** `crates/zeroclaw-runtime/src/security/`
+
+**Components:**
+| Component | Purpose |
+|-----------|---------|
+| `SecurityPolicy` | Access control rules |
+| `Sandbox` | Command sandboxing |
+| `ResourceMonitor` | CPU/memory limits |
+| `AuditLogger` | Action logging |
+| `OTP` | Two-factor auth |
+| `EStop` | Emergency stop |
+
+**Security Levels:**
+```toml
+[security]
+autonomy = "full"  # none, ask, full
+workspace_only = true
+allowed_commands = ["git", "npm", "cargo", ...]
+forbidden_paths = ["/etc", "/root", ...]
+```
+
+---
+
+## Detailed Crate Documentation
+
+### zeroclaw-api
+
+**Tier:** Experimental (Stable at v1.0.0)
+
+**Purpose:** Core trait definitions for all extensions
+
+**Key Traits:**
+```rust
+// Provider trait (LLM/VLM)
+pub trait Provider { ... }
+
+// Channel trait (messaging)
+pub trait Channel { ... }
+
+// Tool trait (actions)
+pub trait Tool { ... }
+
+// Memory trait (storage)
+pub trait Memory { ... }
+
+// Observer trait (observability)
+pub trait Observer { ... }
+
+// RuntimeAdapter trait (OS abstraction)
+pub trait RuntimeAdapter { ... }
+
+// Peripheral trait (hardware)
+pub trait Peripheral { ... }
+```
+
+**Extension Point:** Implement any trait and register in factory modules.
+
+### zeroclaw-config
+
+**Tier:** Beta (Stable at v0.8.0)
+
+**Purpose:** Configuration schema and loading
+
+**Key Types:**
+```rust
+pub struct Config {
+    pub providers: ProviderConfig,
+    pub channels: ChannelConfig,
+    pub memory: MemoryConfig,
+    pub security: SecurityConfig,
+    pub skills: SkillsConfig,
+    pub agent: AgentConfig,
+    // ... 50+ config sections
+}
+```
+
+**Config Loading:**
+1. Load `~/.zeroclaw/config.toml`
+2. Apply environment variable overrides
+3. Validate schema
+4. Initialize workspace directory
+
+### zeroclaw-providers
+
+**Tier:** Beta
+
+**Purpose:** LLM/VLM provider implementations
+
+**Providers:**
+| Provider | Module | Status |
+|----------|--------|--------|
+| Ollama | `ollama.rs` | Beta |
+| Custom (OpenAI-compatible) | `custom.rs` | Beta |
+| OpenAI | `openai.rs` | Beta |
+| Anthropic | `anthropic.rs` | Beta |
+| Google | `google.rs` | Beta |
+
+**Retry Logic:**
+```rust
+pub struct ReliableProvider {
+    primary: Arc<dyn Provider>,
+    fallbacks: Vec<Arc<dyn Provider>>,
+    retries: u32,
+    backoff_ms: u64,
+}
+```
+
+### zeroclaw-runtime
+
+**Tier:** Experimental
+
+**Purpose:** Agent runtime (loop, security, SOP, skills, observability)
+
+**Key Modules:**
+```
+src/
+├── agent/
+│   ├── loop_.rs        # Main event loop
+│   ├── context.rs      # Context trimming
+│   └── history.rs      # Message pruning
+├── security/
+│   ├── mod.rs          # SecurityPolicy struct
+│   ├── detect.rs       # macOS sandbox detection
+│   ├── sandbox.rs      # Command sandboxing
+│   └── audit.rs        # Audit logging
+├── skills/
+│   ├── mod.rs          # Skill loading
+│   └── toml.rs         # SKILL.toml parsing
+├── tools/
+│   ├── mod.rs          # Tool registry
+│   ├── skill_tool.rs   # SkillShellTool (300s timeout)
+│   ├── shell.rs        # ShellTool
+│   └── ...
+├── sop/
+│   ├── mod.rs          # Standard Operating Procedures
+│   └── engine.rs       # SOP execution
+└── observability/
+    ├── logging.rs      # Structured logging
+    └── tracing.rs      # Distributed tracing
+```
+
+### zeroclaw-tools
+
+**Tier:** Experimental
+
+**Purpose:** Built-in tool implementations
+
+**Tool Categories:**
+| Category | Tools |
+|----------|-------|
+| File System | `file_read`, `file_write`, `file_edit`, `glob_search`, `content_search` |
+| Memory | `memory_recall`, `memory_store`, `memory_forget`, `memory_purge` |
+| Web | `browser`, `web_search`, `web_fetch`, `http_request` |
+| Productivity | `cron_*`, `schedule`, `sessions_*` |
+| AI | `llm_task`, `image_gen`, `image_info` |
+| Integration | `mcp_*`, `notion`, `jira`, `google_workspace`, `microsoft365` |
+| Delegation | `delegate`, `swarm`, `ask_user`, `escalate` |
+
+### zeroclaw-channels
+
+**Tier:** Experimental (Plugin migration at v1.0.0)
+
+**Purpose:** Messaging platform integrations
+
+**Orchestrator:**
+```
+src/orchestrator/
+├── mod.rs            # ChannelOrchestrator
+├── routing.rs        # Message routing
+├── media_pipeline.rs # Image/video processing
+└── reaction.rs       # Emoji reactions
+```
+
+**Channel List (30+):**
+- Slack, Discord, Telegram, WhatsApp
+- Microsoft Teams, LINE, WeChat
+- Email (IMAP/SMTP), SMS (Twilio)
+- Webhook, MQTT, Signal, Threema
+- And more...
+
+### zeroclaw-memory
+
+**Tier:** Beta
+
+**Purpose:** Memory backends
+
+**Backends:**
+| Backend | Module | Features |
+|---------|--------|----------|
+| SQLite | `sqlite.rs` | Full-text search, default |
+| Markdown | `markdown.rs` | File-based, human-readable |
+| Postgres | `postgres.rs` | pgvector support |
+| Qdrant | `qdrant.rs` | Vector database |
+| Embeddings | `embeddings.rs` | Embedding-based retrieval |
+
+**Memory Operations:**
+```rust
+// Store memory
+memory.store(MemoryEntry {
+    content: "...",
+    namespace: "default",
+    category: "conversation",
+    metadata: {...},
+}).await?;
+
+// Recall with hybrid search
+let results = memory.recall("what did we discuss", Some("default")).await?;
+```
+
+### zeroclaw-infra
+
+**Tier:** Beta
+
+**Purpose:** Shared infrastructure
+
+**Components:**
+| Component | Purpose |
+|-----------|---------|
+| `debounce` | Debounce rapid events |
+| `session` | Session backend factory |
+| `stall_watchdog` | Detect stalled operations |
+| `cost` | Cost tracking |
+
+### zeroclaw-hardware
+
+**Tier:** Experimental
+
+**Purpose:** Hardware board support
+
+**Supported Hardware:**
+| Hardware | Interface |
+|----------|-----------|
+| STM32 | USB/Serial |
+| Raspberry Pi | GPIO |
+| Arduino | USB/Serial |
+| Custom boards | USB discovery |
+
+### zeroclaw-plugins
+
+**Tier:** Experimental
+
+**Purpose:** WASM plugin system
+
+**Plugin Lifecycle:**
+1. Discover `.wasm` files in `plugins/`
+2. Validate signatures (if enabled)
+3. Load WASM module
+4. Extract tool definitions
+5. Register with agent
+
+### zeroclaw-gateway
+
+**Tier:** Experimental (Separate binary at v0.9.0)
+
+**Purpose:** REST/WebSocket API server
+
+**Features:**
+- Device pairing
+- Session management
+- Webhook receiver
+- WebSocket chat
+- Rate limiting
+
+### zeroclaw-tui
+
+**Tier:** Experimental
+
+**Purpose:** TUI onboarding wizard
+
+**Features:**
+- Interactive setup
+- Provider configuration
+- Channel setup
+- Skill management
+
+### zeroclaw-macros
+
+**Tier:** Beta
+
+**Purpose:** Derive macros for config
+
+**Macros:**
+```rust
+#[derive(Configurable)]
+struct MyConfig {
+    #[config(default = "42")]
+    pub value: i32,
+}
+```
+
+### zeroclaw-tool-call-parser
+
+**Tier:** Beta (Stable at v0.8.0)
+
+**Purpose:** Parse LLM tool calls
+
+**Formats Supported:**
+- OpenAI function calling
+- Anthropic tool use
+- Custom formats
+
+---
+
+## Data Flow
+
+### Request Lifecycle
+
+```
+1. User sends message via Channel/CLI/Gateway
+         │
+         ▼
+2. Channel receives and wraps in ChannelMessage
+         │
+         ▼
+3. Agent Loop processes message
+   - Load conversation history
+   - Add user message to context
+   - Trim context if needed (32K token budget)
+         │
+         ▼
+4. LLM receives messages + available tools
+   - Provider formats request
+   - Sends to LLM API
+         │
+         ▼
+5. LLM responds with:
+   - Text response, OR
+   - Tool call request
+         │
+         ▼
+6. If Tool Call:
+   - Parse tool name and arguments
+   - Look up tool in registry
+   - Validate against security policy
+   - Execute tool (with timeout)
+   - Return result to LLM
+   - Go to step 4 (iterate up to 10 times)
+         │
+         ▼
+7. If Text Response:
+   - Send to channel for delivery
+   - Store in memory (if enabled)
+   - Update conversation history
+```
+
+### Tool Execution Flow
+
+```
+Tool Call Received
+         │
+         ▼
+Security Validation
+- Check autonomy level
+- Validate command (if shell)
+- Check forbidden paths
+- Rate limit check
+         │
+         ▼
+Execute Tool
+- ShellTool: Run in sandbox
+- SkillShellTool: Run with 300s timeout
+- File tools: Path validation
+- Memory tools: Backend operations
+         │
+         ▼
+Capture Output
+- stdout/stderr (max 1MB)
+- Exit code
+- Execution time
+         │
+         ▼
+Return ToolResult
+- success: bool
+- output: String
+- error: Option<String>
+         │
+         ▼
+Log to Audit (if enabled)
+- Action type
+- Arguments (sanitized)
+- Result
+- Timestamp
+```
+
+### Memory Operations
+
+```
+Store Memory
+    │
+    ▼
+Validate Entry
+- Content length
+- Namespace exists
+- Category valid
+    │
+    ▼
+Backend-Specific Storage
+- SQLite: INSERT INTO memories
+- Markdown: Write to file
+- Postgres: INSERT with embedding
+    │
+    ▼
+Return Memory ID
+```
+
+```
+Recall Memory
+    │
+    ▼
+Parse Query
+- Extract keywords
+- Generate embedding (if hybrid)
+    │
+    ▼
+Backend-Specific Search
+- SQLite: FTS5 + metadata filter
+- Vector: Cosine similarity
+- Hybrid: Combine scores
+    │
+    ▼
+Rank and Filter
+- Relevance threshold (0.4 default)
+- Max results
+- Namespace filter
+    │
+    ▼
+Return Memory Entries
+```
+
+---
+
+## Video Analysis Pipeline
+
+This is a complete example of how a custom skill integrates with ZeroClaw.
+
+### Components
+
+1. **Skill Definition** (`~/open-skills/skills/event-inference/SKILL.toml`)
+2. **Python Analyzer** (`~/.zeroclaw/video_event_analyzer.py`)
+3. **VLM Server** (qwen-vl via SSH tunnel)
+
+### Complete Flow
+
+```
+User: "What event is happening in /path/to/video.mp4?"
+         │
+         ▼
+ZeroClaw Agent receives message
+         │
+         ▼
+LLM matches prompt to skill prompts:
+- "What event is happening"
+- "analyze this video"
+         │
+         ▼
+LLM invokes: event-inference.analyze_media
+  arguments: {file: "/path/to/video.mp4", interval: 5}
+         │
+         ▼
+SkillShellTool executes (300s timeout):
+  ~/.zeroclaw/venv/bin/python3 \
+  ~/.zeroclaw/video_event_analyzer.py \
+  /path/to/video.mp4 --interval 5 --pretty
+         │
+         ▼
+Video Event Analyzer:
+  1. Extract frames every 5 seconds
+  2. For each frame:
+     a. Detect faces (OpenCV Haar Cascade)
+     b. Crop each face with padding
+     c. Encode as base64
+     d. Send to VLM (qwen-vl)
+     e. VLM returns: gender, age, expression, gaze
+     f. Infer event for this frame
+  3. Create event timeline (segment by event type)
+  4. Save JSON to ~/.zeroclaw/workspace/events/
+         │
+         ▼
+Results returned to LLM:
+{
+  "video_path": "...",
+  "frames_analyzed": 7,
+  "event_timeline": {...},
+  "event": {"event_type": "celebration", ...}
+}
+         │
+         ▼
+LLM summarizes for user:
+"Based on my analysis of the video, I can see a celebration
+event, likely a birthday party. The video shows multiple
+people smiling and looking at the camera..."
+```
+
+### Frame Extraction Math
+
+```
+Video: 33 seconds @ 30 fps = 990 total frames
+Interval: 5 seconds
+Frame interval: 5 × 30 = 150 frames
+Extracted frames: 0, 150, 300, 450, 600, 750, 900
+                  (0s, 5s, 10s, 15s, 20s, 25s, 30s)
+Total: 7 frames
+```
+
+### Token Explosion Problem
+
+With crowded videos (many faces per frame):
+```
+7 frames × 5 faces = 35 face analyses
+35 faces × 250 tokens = 8,750 tokens (just VLM output)
++ event inference: 35 × 200 = 7,000 tokens
++ conversation history: ~10,000 tokens
+= ~25,750 tokens (approaching 32K limit)
+```
+
+This causes the LLM to hit context limits and give up.
+
+**Solution:** Use `zc` script for direct execution (bypasses LLM).
+
+---
+
+## Extension Guide
+
+### Adding a New Provider
+
+1. **Implement Provider trait** in `crates/zeroclaw-providers/src/my_provider.rs`:
+
+```rust
+pub struct MyProvider {
+    api_key: String,
+    base_url: String,
+    model: String,
+}
+
+#[async_trait]
+impl Provider for MyProvider {
+    async fn chat(&self, messages: Vec<Message>) -> Result<ChatResponse> {
+        // Implement API call
+    }
+    
+    async fn chat_with_tools(&self, messages: Vec<Message>, tools: Vec<ToolSpec>) -> Result<ChatResponse> {
+        // Implement tool-aware API call
+    }
+}
+```
+
+2. **Add to factory** in `crates/zeroclaw-providers/src/lib.rs`:
+
+```rust
+pub fn create_provider(config: &ProviderConfig) -> Result<Arc<dyn Provider>> {
+    match config.provider_type.as_str() {
+        "my_provider" => Ok(Arc::new(MyProvider::new(config)?)),
+        // ... existing providers
+        _ => Err(anyhow!("Unknown provider: {}", config.provider_type)),
+    }
+}
+```
+
+3. **Update config schema** in `crates/zeroclaw-config/src/schema.rs`:
+
+```rust
+#[derive(Configurable, Clone, Debug)]
+pub struct MyProviderConfig {
+    pub api_key: String,
+    pub base_url: String,
+}
+```
+
+### Adding a New Tool
+
+1. **Create tool module** in `crates/zeroclaw-tools/src/my_tool.rs`:
+
+```rust
+pub struct MyTool {
+    security: Arc<SecurityPolicy>,
+}
+
+impl MyTool {
+    pub fn new(security: Arc<SecurityPolicy>) -> Self {
+        Self { security }
+    }
+}
+
+#[async_trait]
+impl Tool for MyTool {
+    fn name(&self) -> &str { "my_tool" }
+    
+    fn description(&self) -> &str { "Does something useful" }
+    
+    fn parameters_schema(&self) -> serde_json::Value {
+        json!({
+            "type": "object",
+            "properties": {
+                "input": {"type": "string", "description": "Input value"}
+            },
+            "required": ["input"]
+        })
+    }
+    
+    async fn execute(&self, args: serde_json::Value) -> Result<ToolResult> {
+        // Validate security
+        self.security.validate_command_execution("my_tool", true)?;
+        
+        // Execute logic
+        let input = args["input"].as_str().unwrap();
+        let result = self.do_something(input).await?;
+        
+        Ok(ToolResult {
+            success: true,
+            output: result,
+            error: None,
+        })
+    }
+}
+```
+
+2. **Export from lib.rs**:
+
+```rust
+pub mod my_tool;
+pub use my_tool::MyTool;
+```
+
+3. **Register in runtime** in `crates/zeroclaw-runtime/src/tools/mod.rs`:
+
+```rust
+pub use zeroclaw_tools::my_tool::MyTool;
+
+// In all_tools_with_runtime():
+tool_arcs.push(Arc::new(MyTool::new(security.clone())));
+```
+
+### Adding a New Channel
+
+1. **Implement Channel trait** in `crates/zeroclaw-channels/src/my_channel.rs`:
+
+```rust
+pub struct MyChannel {
+    config: MyChannelConfig,
+    orchestrator: Arc<ChannelOrchestrator>,
+}
+
+#[async_trait]
+impl Channel for MyChannel {
+    async fn connect(&self) -> Result<()> {
+        // Establish connection
+    }
+    
+    async fn send(&self, message: ChannelMessage) -> Result<()> {
+        // Send message
+    }
+    
+    async fn disconnect(&self) -> Result<()> {
+        // Clean shutdown
+    }
+}
+```
+
+2. **Add to channel factory** in `crates/zeroclaw-channels/src/lib.rs`:
+
+```rust
+pub async fn create_channel(
+    config: &ChannelConfig,
+    orchestrator: Arc<ChannelOrchestrator>,
+) -> Result<Arc<dyn Channel>> {
+    match config.channel_type.as_str() {
+        "my_channel" => Ok(Arc::new(MyChannel::new(config, orchestrator).await?)),
+        // ... existing channels
+        _ => Err(anyhow!("Unknown channel: {}", config.channel_type)),
+    }
+}
+```
+
+### Adding a New Skill
+
+Skills are user-defined and don't require code changes:
+
+1. **Create skill directory** in `~/open-skills/skills/my-skill/`:
+
+```bash
+mkdir -p ~/open-skills/skills/my-skill
+```
+
+2. **Create SKILL.toml**:
+
+```toml
+[skill]
+name = "my-skill"
+description = "Does something amazing"
+version = "1.0.0"
+author = "Your Name"
+tags = ["custom", "automation"]
+
+prompts = [
+    "do something",
+    "run my skill",
+]
+
+[[tools]]
+name = "do_something"
+description = "Does the thing"
+kind = "shell"
+command = "/path/to/script.sh {{arg1}} {{arg2}}"
+
+[tools.args]
+arg1 = "First argument"
+arg2 = "Second argument"
+```
+
+3. **Reload skills** (or restart agent):
+
+```bash
+zeroclaw agent -m "reload skills"
+```
+
+---
+
+## Configuration Reference
+
+### Key Config Sections
+
+```toml
+# Provider configuration
+[providers]
+fallback = "custom:http://localhost:8000/v1"
+
+[providers.models."custom:http://localhost:8000/v1"]
+model = "qwen-vl"
+base_url = "http://localhost:8000/v1"
+api_key = "not-needed"
+temperature = 0.7
+timeout_secs = 120
+
+# Agent configuration
+[agent]
+compact_context = true
+max_tool_iterations = 10
+max_history_messages = 50
+max_context_tokens = 32000
+
+# Memory configuration
+[memory]
+backend = "sqlite"
+auto_save = true
+hygiene_enabled = true
+archive_after_days = 7
+purge_after_days = 30
+
+# Security configuration
+[security]
+autonomy = "full"
+workspace_only = true
+allowed_commands = ["git", "npm", "cargo", "ls", "cat", "grep"]
+forbidden_paths = ["/etc", "/root", "/home", "/usr"]
+
+# Skills configuration
+[skills]
+open_skills_enabled = true
+allow_scripts = false
+prompt_injection_mode = "full"
+
+# Channel configuration
+[channels]
+cli = true
+message_timeout_secs = 300
+ack_reactions = true
+
+# Gateway configuration
+[gateway]
+port = 42617
+host = "127.0.0.1"
+require_pairing = true
+```
+
+### Environment Variable Overrides
+
+```bash
+export OLLAMA_HOST="http://localhost:8000"
+export ZC_VLM_MODEL="qwen-vl"
+export ZEROCLAW_CONFIG="/path/to/config.toml"
+export ZEROCLAW_WORKSPACE="/path/to/workspace"
+```
+
+---
+
+## Deployment
+
+### Build from Source
+
+```bash
+# Clone repository
+git clone https://github.sec.samsung.net/vdil-data/zeroClaw_POC.git
+cd zeroClaw_POC
+
+# Build release binary
+cargo build --release
+
+# Install binary
+cp target/release/zeroclaw ~/.cargo/bin/
+```
+
+### Install via Script
+
+```bash
+# Run installer
+./install.sh
+
+# This will:
+# 1. Build zeroclaw binary
+# 2. Create ~/.zeroclaw directory
+# 3. Generate default config
+# 4. Set up Python venv
+# 5. Install Python dependencies
+```
+
+### Runtime Requirements
+
+**System:**
+- macOS 12+ or Linux
+- 8GB RAM minimum (16GB recommended)
+- 10GB disk space
+
+**Dependencies:**
+- Rust 1.70+
+- Python 3.10+
+- OpenCV (for video analysis)
+- SQLite3
+
+**VLM Server:**
+- SSH tunnel to remote server
+- llama.cpp or Ollama running
+- qwen-vl model loaded
+
+### SSH Tunnel Setup
+
+```bash
+# Start tunnel (keep running)
+ssh -L 8000:localhost:8000 joonyeoup.k1@105.145.80.65
+
+# Test connection
+curl http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model":"qwen-vl","messages":[{"role":"user","content":[{"type":"text","text":"hi"}]}]}'
+```
+
+### First Run
+
+```bash
+# Run onboarding wizard
+zeroclaw onboard
+
+# Or manually configure:
+# 1. Edit ~/.zeroclaw/config.toml
+# 2. Set up providers
+# 3. Configure channels
+# 4. Enable skills
+
+# Start agent
+zeroclaw agent
+
+# Or run CLI command
+zeroclaw agent -m "Hello, what can you do?"
+```
+
+---
+
+## Quick Reference
+
+### Common Commands
+
+```bash
+# Check agent status
+zeroclaw agent --status
+
+# Run single command
+zeroclaw agent -m "What's the weather?"
+
+# List skills
+zeroclaw skills list
+
+# List cron jobs
+zeroclaw cron list
+
+# View memory
+zeroclaw memory recall "what did we discuss"
+
+# Start gateway
+zeroclaw gateway
+
+# Run onboarding
+zeroclaw onboard
+```
+
+### File Locations
+
+| Path | Purpose |
+|------|---------|
+| `~/.zeroclaw/config.toml` | Main configuration |
+| `~/.zeroclaw/workspace/` | Working directory |
+| `~/.zeroclaw/workspace/events/` | Video analysis output |
+| `~/.zeroclaw/people/store.json` | Visitor database |
+| `~/.zeroclaw/memory.db` | SQLite memory |
+| `~/open-skills/skills/` | Skill definitions |
+| `~/.zeroclaw/bin/zc` | Video analysis shortcut |
+
+### Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| "Max iterations reached" | Use explicit tool invocation |
+| VLM timeout | Check SSH tunnel: `ps aux \| grep ssh` |
+| No faces detected | Improve lighting/video quality |
+| Permission denied | Copy file to accessible location |
+| Skill not loading | Check `open_skills_enabled = true` |
+
+---
+
+## License
+
+ZeroClaw is dual-licensed under Apache 2.0 and MIT licenses.
+
+See `LICENSE-APACHE` and `LICENSE-MIT` for details.
