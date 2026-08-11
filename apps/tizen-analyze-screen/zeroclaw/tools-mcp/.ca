@@ -1,0 +1,4 @@
+[target.armv-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+EOF
+

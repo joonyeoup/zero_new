@@ -1,0 +1,1 @@
+/home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/target/armv7-unknown-linux-gnueabihf/release/analyze-screen-postprocess: /home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/src/main.rs /home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/src/stagelog.rs /home/joon/Desktop/zero_new/apps/tizen-analyze-screen/postprocess/src/validate.rs

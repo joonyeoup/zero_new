@@ -1,9 +1,9 @@
 /* Analyze Screen — Tizen TV web app (ES5 for older TV browsers).
- *
- * Flow: button / remote ENTER -> POST to sidecar -> loading overlay ->
- * render validated JSON (or structured error). Every stage is logged with a
- * timestamp so per-stage latency is measurable from the web inspector.
- */
+*
+* Flow: button / remote ENTER -> POST to sidecar -> loading overlay ->
+* render validated JSON (or structured error). Every stage is logged with a
+* timestamp so per-stage latency is measurable from the web inspector.
+*/
 (function () {
     "use strict";
 
@@ -32,6 +32,33 @@
 
     function log(stage, msg) {
         console.log("[" + new Date().toISOString() + "] [" + stage + "] " + msg);
+    }
+
+    /* ---------- live TV behind the app ---------- */
+
+    /* The app owns the graphics plane; broadcast video lives on a separate
+     * video plane that is torn down when a normal app takes the foreground.
+     * tvwindow.show() puts it back, which is what makes both the visible
+     * background AND tzcapturesample's capture non-black. */
+    function initTvWindow() {
+        if (typeof tizen === "undefined" || !tizen.tvwindow) {
+            log("tvwindow", "API unavailable — background will stay black");
+            return;
+        }
+        try {
+            tizen.tvwindow.show(
+                function (rect) {
+                    log("tvwindow", "shown at " + JSON.stringify(rect));
+                },
+                function (err) {
+                    log("tvwindow", "show failed: " + (err && err.message));
+                },
+                ["0px", "0px", "100%", "100%"],
+                "MAIN"
+            );
+        } catch (e) {
+            log("tvwindow", "show threw: " + String(e));
+        }
     }
 
     /* ---------- overlay state machine ---------- */
@@ -73,7 +100,7 @@
             var conf = typeof el.confidence === "number"
                 ? Math.round(el.confidence * 100) + "%" : "";
             li.innerHTML =
-                '<span class="el-conf">' + conf + '</span>' +
+                '<span class="el-conf">' + conf + '</span> ' +
                 '<span class="el-name"></span> — <span class="el-desc"></span>';
             li.querySelector(".el-name").textContent = el.name || "?";
             li.querySelector(".el-desc").textContent = el.description || "";
@@ -195,6 +222,7 @@
         }
     });
 
+    initTvWindow();
     els.analyzeBtn.focus();
     log("app_start", "ready, gateway=" + APP_CONFIG.GATEWAY_URL);
 })();

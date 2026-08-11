@@ -1,0 +1,1 @@
+/home/joon/Desktop/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/target/armv7-unknown-linux-musleabihf/release/tv-screen-tools: /home/joon/Desktop/zero_new/apps/tizen-analyze-screen/zeroclaw/tools-mcp/src/main.rs
