@@ -174,6 +174,7 @@ fn run_screenshot() -> Result<String, String> {
     };
     
     *LAST_SCREENSHOT.lock().unwrap() = Some(path.clone());
+    // std::thread::sleep(Duration::from_secs(5));
     log(&format!("=== TOTAL: screenshot completed in {}ms, path={}", started.elapsed().as_millis(), path.display()));
     Ok(json!({ "image_path": path.display().to_string() }).to_string())
 }
@@ -425,7 +426,8 @@ fn run_analyze_image(args: &Value) -> Result<String, String> {
     let body = json!({
         "model": model,
         "temperature": 0,
-        "max_tokens": 1024,
+        "max_tokens": 240,
+        "chat_template_kwargs": { "enable_thinking": false },
         "messages": [{ "role": "user", "content": [
             { "type": "image_url", "image_url": { "url": data_uri } },
             { "type": "text", "text": prompt }
@@ -483,7 +485,18 @@ fn run_analyze_image(args: &Value) -> Result<String, String> {
         .map(str::to_string)
         .ok_or_else(|| "VLM response missing choices[0].message.content".to_string())?;
     log(&format!("Step 8 - parsed VLM response ({}ms)", parse_start.elapsed().as_millis()));
-    
+
+    let finish_reason = resp["choices"][0]["finish_reason"]
+        .as_str()
+        .unwrap_or("unknown");
+    if vlm_text.trim().is_empty() {
+        return Err(format!(
+            "VLM returned empty content (finish_reason={})",
+            finish_reason
+        ));
+    }
+    log(&format!("Step 8b - content ok ({} chars, finish_reason={})",
+                    vlm_text.len(), finish_reason));
     log(&format!("=== TOTAL: analyze_image completed in {}ms ===", started.elapsed().as_millis()));
     
     Ok(vlm_text)
