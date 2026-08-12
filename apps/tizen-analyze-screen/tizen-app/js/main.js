@@ -210,10 +210,19 @@
             case KEY.RETURN: // Samsung remote "back"
                 if (overlayOpen) { hideOverlay(); e.preventDefault(); }
                 break;
-            case KEY.LEFT:
-            case KEY.RIGHT:
             case KEY.UP:
             case KEY.DOWN:
+                if (overlayOpen && !els.result.classList.contains("hidden")) {
+                    els.result.scrollTop += (e.keyCode === KEY.DOWN ? 120 : -120);
+                    e.preventDefault();
+                    break;
+                }
+                (overlayOpen && !els.closeBtn.classList.contains("hidden")
+                    ? els.closeBtn : els.analyzeBtn).focus();
+                e.preventDefault();
+                break;
+            case KEY.LEFT:
+            case KEY.RIGHT:
                 // Single-button-per-state UI: arrows just restore focus.
                 (overlayOpen && !els.closeBtn.classList.contains("hidden")
                     ? els.closeBtn : els.analyzeBtn).focus();

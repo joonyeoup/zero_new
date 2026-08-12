@@ -232,70 +232,6 @@ fn exec_screenshot(out_path: &Path, timeout_secs: u64) -> Result<PathBuf, String
     Err(format!("no PNG at {} and stdout had no valid path", out_path.display()))
 }
 
-// fn run_screenshot() -> Result<String, String> {
-//     let mode = env_or("SCREENSHOT_MODE", "exec");
-//     let out_path = PathBuf::from(env_or("SCREENSHOT_OUTPUT", "/tmp/screenshot.png"));
-//     let timeout = env_or("SCREENSHOT_TIMEOUT_SECS", "10").parse().unwrap_or(10);
-//     let path = match mode.as_str() {
-//         "watch" => watch_screenshot(&out_path, timeout)?,
-//         _ => exec_screenshot(&out_path, timeout)?,
-//     };
-//     *LAST_SCREENSHOT.lock().unwrap() = Some(path.clone());
-//     Ok(json!({ "image_path": path.display().to_string() }).to_string())
-// }
-
-// fn exec_screenshot(out_path: &Path, timeout_secs: u64) -> Result<PathBuf, String> {
-//     let bin = std::env::var("SCREENSHOT_BIN")
-//         .map_err(|_| "SCREENSHOT_BIN is not configured".to_string())?;
-//     let args: Vec<String> = env_or("SCREENSHOT_ARGS", "")
-//         .split_whitespace()
-//         .map(str::to_string)
-//         .collect();
-//     let before = mtime(out_path);
-
-//     let mut child = Command::new(&bin)
-//         .args(&args)
-//         .stdout(Stdio::piped())
-//         .stderr(Stdio::piped())
-//         .spawn()
-//         .map_err(|e| format!("failed to spawn {bin}: {e}"))?;
-//     let status = child
-//         .wait_timeout(Duration::from_secs(timeout_secs))
-//         .map_err(|e| format!("wait failed: {e}"))?;
-//     let status = match status {
-//         Some(s) => s,
-//         None => {
-//             let _ = child.kill();
-//             let _ = child.wait();
-//             return Err(format!("screenshot binary timed out after {timeout_secs}s"));
-//         }
-//     };
-//     let output = child.wait_with_output().map_err(|e| format!("read output failed: {e}"))?;
-//     if !status.success() {
-//         return Err(format!(
-//             "screenshot binary exited with {status}: {}",
-//             String::from_utf8_lossy(&output.stderr).trim()
-//         ));
-//     }
-//     // Fixed output path, freshly written.
-//     if out_path.is_file() && mtime(out_path) != before {
-//         return Ok(out_path.to_path_buf());
-//     }
-//     // Fallback pattern: binary printed the PNG path to stdout.
-//     let stdout = String::from_utf8_lossy(&output.stdout);
-//     if let Some(p) = stdout
-//         .lines()
-//         .rev()
-//         .map(str::trim)
-//         .find(|l| !l.is_empty() && Path::new(l).is_file())
-//     {
-//         return Ok(PathBuf::from(p));
-//     }
-//     if out_path.is_file() {
-//         return Ok(out_path.to_path_buf()); // coarse-mtime filesystems
-//     }
-//     Err(format!("no PNG at {} and stdout had no valid path", out_path.display()))
-// }
 
 fn watch_screenshot(out_path: &Path, timeout_secs: u64) -> Result<PathBuf, String> {
     let before = mtime(out_path);
@@ -315,9 +251,10 @@ fn watch_screenshot(out_path: &Path, timeout_secs: u64) -> Result<PathBuf, Strin
 
 // ------------------------------------------------------------- analyze_image
 
-const DEFAULT_VLM_PROMPT: &str = "Describe this TV screen in 3 short sentences: \
-                                    State the screen type, then name 3 most prominent visible elements \
-                                    Do not speculate about content you cannot see. Do not list minor UI details";
+const DEFAULT_VLM_PROMPT: &str = "Describe this TV screen in 3-5 sentences: \
+                                    State the screen type, then name 5 prominent visible elements. \
+                                    Identify any brand logos, location, settings, named person if recognizable,
+                                    and any noticable products.";
 
 /// Resolve the image to analyze: the caller-supplied path when it points at a
 /// real file, otherwise the most recent screenshot (in-process memory, then
@@ -344,52 +281,6 @@ fn resolve_image_path(args: &Value) -> Result<PathBuf, String> {
     Err("no usable image: no valid image_path argument and no screenshot captured yet".to_string())
 }
 
-// fn run_analyze_image(args: &Value) -> Result<String, String> {
-//     let image_path = resolve_image_path(args)?;
-//     let base_url = std::env::var("VLM_BASE_URL")
-//         .map_err(|_| "VLM_BASE_URL is not configured".to_string())?;
-//     let model = env_or("VLM_MODEL", "Qwen/Qwen3-VL-8B-Instruct");
-//     let timeout: u64 = env_or("VLM_TIMEOUT_SECS", "60").parse().unwrap_or(60);
-//     let prompt = env_or("VLM_PROMPT", DEFAULT_VLM_PROMPT);
-
-//     let png = prepare_image(&image_path)?;
-//     log(&format!("image payload {} bytes", png.len()));
-//     let data_uri = format!(
-//         "data:image/png;base64,{}",
-//         base64::engine::general_purpose::STANDARD.encode(&png)
-//     );
-//     let body = json!({
-//         "model": model,
-//         "temperature": 0,
-//         "max_tokens": 1024,
-//         "messages": [{ "role": "user", "content": [
-//             { "type": "image_url", "image_url": { "url": data_uri } },
-//             { "type": "text", "text": prompt }
-//         ]}]
-//     });
-
-//     let url = format!("{}/chat/completions", base_url.trim_end_matches('/'));
-//     let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(timeout)).build();
-//     let mut req = agent.post(&url).set("Content-Type", "application/json");
-//     if let Ok(key) = std::env::var("VLM_API_KEY") {
-//         req = req.set("Authorization", &format!("Bearer {key}"));
-//     }
-//     let resp: Value = req
-//         .send_json(body)
-//         .map_err(|e| match e {
-//             ureq::Error::Status(code, r) => format!(
-//                 "VLM returned HTTP {code}: {}",
-//                 r.into_string().unwrap_or_default().chars().take(300).collect::<String>()
-//             ),
-//             other => format!("VLM request failed: {other}"),
-//         })?
-//         .into_json()
-//         .map_err(|e| format!("VLM response was not JSON: {e}"))?;
-//     resp["choices"][0]["message"]["content"]
-//         .as_str()
-//         .map(str::to_string)
-//         .ok_or_else(|| "VLM response missing choices[0].message.content".to_string())
-// }
 
 fn run_analyze_image(args: &Value) -> Result<String, String> {
     let started = std::time::Instant::now();
@@ -502,13 +393,6 @@ fn run_analyze_image(args: &Value) -> Result<String, String> {
     Ok(vlm_text)
 }
 
-// fn prepare_image(path: &Path) -> Result<Vec<u8>, String> {
-//     let enabled = env_or("DOWNSCALE_ENABLED", "true") == "true";
-//     if !enabled {
-//         return std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()));
-//     }
-//     downscale(path)
-// }
 
 
 fn prepare_image(path: &Path) -> Result<Vec<u8>, String> {
@@ -572,27 +456,4 @@ fn downscale(path: &Path) -> Result<Vec<u8>, String> {
     Ok(result)
 }
 
-// #[cfg(feature = "downscale")]
-// fn downscale(path: &Path) -> Result<Vec<u8>, String> {
-//     let max: u32 = env_or("DOWNSCALE_MAX_EDGE", "1280").parse().unwrap_or(1280);
-//     let img = image::open(path).map_err(|e| format!("cannot decode {}: {e}", path.display()))?;
-//     if img.width().max(img.height()) <= max {
-//         return std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()));
-//     }
-//     let resized = img.resize(max, max, image::imageops::FilterType::Triangle);
-//     log(&format!(
-//         "downscaled {}x{} -> {}x{}",
-//         img.width(), img.height(), resized.width(), resized.height()
-//     ));
-//     let mut buf = std::io::Cursor::new(Vec::new());
-//     resized
-//         .write_to(&mut buf, image::ImageFormat::Png)
-//         .map_err(|e| format!("re-encode failed: {e}"))?;
-//     Ok(buf.into_inner())
-// }
 
-// #[cfg(not(feature = "downscale"))]
-// fn downscale(path: &Path) -> Result<Vec<u8>, String> {
-//     log("built without downscale feature; sending full-size PNG");
-//     std::fs::read(path).map_err(|e| format!("cannot read {}: {e}", path.display()))
-// }

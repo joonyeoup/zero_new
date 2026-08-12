@@ -115,6 +115,11 @@ button.focusable:disabled { background: #3a4653; color: #8a97a3; }
 #result-title { font-size: 56px; }
 #result-summary { color: #c4d2dd; line-height: 1.45; }
 
+#state-result {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
 #state-result h3 {
     font-size: 30px;
     color: #7f95a8;
