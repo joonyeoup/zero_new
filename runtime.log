@@ -1,13 +1,26 @@
-fn run_analyze_screen(args: &Value) -> Result<String, String> {
-    let started = std::time::Instant::now();
-    run_screenshot()?;
-    log(&format!("merged: capture done ({}ms)", started.elapsed().as_millis()));
-    let out = run_analyze_image(args)?;
-    log(&format!("=== TOTAL: analyze_screen completed in {}ms ===",
-                 started.elapsed().as_millis()));
-    Ok(out)
+/// Pull the tv__analyze_screen tool result out of the trace file.
+/// `output` is a JSON-encoded string, so it needs two parses.
+fn last_tool_result(cfg: &Cfg) -> Option<String> {
+    let content = std::fs::read_to_string(&cfg.trace_path).ok()?;
+    for line in content.lines().rev().take(200) {
+        let v: Value = match serde_json::from_str(line) { Ok(v) => v, Err(_) => continue };
+        let a = &v["attributes"];
+        if a["tool"] != "tv__analyze_screen" { continue; }
+        if v["event"]["action"] != "complete" { continue; }
+        let outer = a["output"].as_str()?;
+        let inner: Value = serde_json::from_str(outer).ok()?;
+        return inner["content"][0]["text"].as_str().map(str::to_string);
+    }
+    None
 }
 
-            "screenshot" => run_screenshot(),
-            "analyze_image" => run_analyze_image(&params["arguments"]),
-            "analyze_screen" => run_analyze_screen(&params["arguments"]),
+    let text = match webhook(cfg, message, &session_id, log) {
+        Ok(t) => t,
+        Err(e) => return (502, validate::error_object("GATEWAY_FAILED", &e)),
+    };
+
+    // ADD: the tool already produced the schema JSON; the agent's text is a marker.
+    let text = match last_tool_result(cfg) {
+        Some(t) => { log.note("using tool result"); t }
+        None    => { log.note("tool result unavailable, using agent text"); text }
+    };
