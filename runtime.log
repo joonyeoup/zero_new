@@ -1,18 +1,13 @@
-case KEY.UP:
-                case KEY.DOWN:
-                    if (overlayOpen && !els.result.classList.contains("hidden")) {
-                        els.result.scrollTop += (e.keyCode === KEY.DOWN ? 120 : -120);
-                        e.preventDefault();
-                        break;
-                    }
-                    (overlayOpen && !els.closeBtn.classList.contains("hidden")
-                        ? els.closeBtn : els.analyzeBtn).focus();
-                    e.preventDefault();
-                    break;
-                case KEY.LEFT:
-                case KEY.RIGHT:
-                    // Single-button-per-state UI: arrows just restore focus.
-                    (overlayOpen && !els.closeBtn.classList.contains("hidden")
-                        ? els.closeBtn : els.analyzeBtn).focus();
-                    e.preventDefault();
-                    break;
+fn run_analyze_screen(args: &Value) -> Result<String, String> {
+    let started = std::time::Instant::now();
+    run_screenshot()?;
+    log(&format!("merged: capture done ({}ms)", started.elapsed().as_millis()));
+    let out = run_analyze_image(args)?;
+    log(&format!("=== TOTAL: analyze_screen completed in {}ms ===",
+                 started.elapsed().as_millis()));
+    Ok(out)
+}
+
+            "screenshot" => run_screenshot(),
+            "analyze_image" => run_analyze_image(&params["arguments"]),
+            "analyze_screen" => run_analyze_screen(&params["arguments"]),
