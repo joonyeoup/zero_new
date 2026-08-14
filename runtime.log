@@ -1,20 +1,40 @@
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::{get, post},
+    Json, Router,
+};
+use std::time::Instant;
+
+pub async fn serve(port: u16) -> anyhow::Result<()> {
+    let app = Router::new()
+        .route("/analyze", post(handle_analyze))
+        .route("/health", get(|| async { "ok" }));
+
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await?;
+    eprintln!("[tools] serve mode listening on 0.0.0.0:{port}");
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
 async fn handle_analyze() -> Result<Json<serde_json::Value>, AppError> {
     let t0 = Instant::now();
 
+    // Capture. Returns {"image_path": "..."} as a JSON string, not a bare path.
     let shot_json = crate::run_screenshot()
         .map_err(|e| anyhow::anyhow!("run_screenshot: {e}"))?;
     let capture_ms = t0.elapsed().as_millis() as u64;
 
-    // run_screenshot returns {"image_path": "..."}, not a bare path.
     let parsed: serde_json::Value = serde_json::from_str(&shot_json)
         .map_err(|e| anyhow::anyhow!("screenshot result not JSON: {e}"))?;
     let img = parsed["image_path"]
         .as_str()
         .ok_or_else(|| anyhow::anyhow!("screenshot result missing image_path: {shot_json}"))?;
 
-    let result = crate::vlm::run_analyze_image_structured(
-        std::path::Path::new(img)
-    ).await?;
+    // Same function the MCP tool path calls — identical prompt, model, and
+    // request body, so the two backends are comparable.
+    let result = crate::run_analyze_image(&serde_json::json!({ "image_path": img }))
+        .map_err(|e| anyhow::anyhow!("run_analyze_image: {e}"))?;
     let vlm_ms = t0.elapsed().as_millis() as u64 - capture_ms;
 
     eprintln!("[tools] capture={capture_ms}ms vlm={vlm_ms}ms");
@@ -24,4 +44,23 @@ async fn handle_analyze() -> Result<Json<serde_json::Value>, AppError> {
         "capture_ms": capture_ms,
         "vlm_ms": vlm_ms,
     })))
+}
+
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        eprintln!("[tools] error: {:#}", self.0);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("{:#}", self.0) })),
+        )
+            .into_response()
+    }
+}
+
+impl<E: Into<anyhow::Error>> From<E> for AppError {
+    fn from(e: E) -> Self {
+        Self(e.into())
+    }
 }
