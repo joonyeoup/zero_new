@@ -1,26 +1,373 @@
-/// Pull the tv__analyze_screen tool result out of the trace file.
-/// `output` is a JSON-encoded string, so it needs two parses.
-fn last_tool_result(cfg: &Cfg) -> Option<String> {
-    let content = std::fs::read_to_string(&cfg.trace_path).ok()?;
-    for line in content.lines().rev().take(200) {
-        let v: Value = match serde_json::from_str(line) { Ok(v) => v, Err(_) => continue };
-        let a = &v["attributes"];
-        if a["tool"] != "tv__analyze_screen" { continue; }
-        if v["event"]["action"] != "complete" { continue; }
-        let outer = a["output"].as_str()?;
-        let inner: Value = serde_json::from_str(outer).ok()?;
-        return inner["content"][0]["text"].as_str().map(str::to_string);
-    }
-    None
+[features]
+default = []
+serve = ["dep:axum"]
+# downscale = [...]   # existing, leave as is
+
+[dependencies]
+axum = { version = "0.7", optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net"] }
+serde_json = "1"
+anyhow = "1"
+# reqwest must be rustls, not native-tls, for musl:
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+
+use anyhow::{bail, Context, Result};
+use std::path::Path;
+
+/// ⚠️ SEAM 1: replace with your actual six-field contract —
+/// copy it verbatim from the agent's system prompt so the two
+/// paths are producing the identical schema.
+const SIX_FIELD_PROMPT: &str = r#"You analyze a television screen capture.
+
+Respond with ONE JSON object and nothing else. No markdown fences,
+no preamble, no explanation. The object must have exactly these keys:
+
+{
+  "content_type": string,
+  "title": string,
+  "summary": string,
+  "on_screen_text": string,
+  "scene": string,
+  "confidence": number
 }
 
-    let text = match webhook(cfg, message, &session_id, log) {
-        Ok(t) => t,
-        Err(e) => return (502, validate::error_object("GATEWAY_FAILED", &e)),
-    };
+If a field cannot be determined, use an empty string (or 0.0 for
+confidence). Never omit a key. Never add a key."#;
 
-    // ADD: the tool already produced the schema JSON; the agent's text is a marker.
-    let text = match last_tool_result(cfg) {
-        Some(t) => { log.note("using tool result"); t }
-        None    => { log.note("tool result unavailable, using agent text"); text }
-    };
+/// ⚠️ SEAM 2: your llama-server address.
+const VLM_URL: &str = "http://172.28.138.103:8080/v1/chat/completions";
+
+/// Structured variant of `run_analyze_image`. Same request shape,
+/// different system prompt — the VLM emits the contract directly
+/// instead of narrating for an agent.
+pub async fn run_analyze_image_structured(img: &Path) -> Result<String> {
+    let bytes = tokio::fs::read(img)
+        .await
+        .with_context(|| format!("reading capture at {}", img.display()))?;
+    let b64 = base64_encode(&bytes);
+
+    let body = serde_json::json!({
+        "model": "qwen3.6-35b",              // ⚠️ SEAM 3: your model id
+        "max_tokens": 512,
+        "temperature": 0.2,
+        "chat_template_kwargs": { "enable_thinking": false },
+        "messages": [
+            { "role": "system", "content": SIX_FIELD_PROMPT },
+            { "role": "user", "content": [
+                { "type": "image_url",
+                  "image_url": { "url": format!("data:image/png;base64,{b64}") } },
+                { "type": "text", "text": "Analyze this screen." }
+            ]}
+        ]
+    });
+
+    let resp = reqwest::Client::new()
+        .post(VLM_URL)
+        .json(&body)
+        .send()
+        .await
+        .context("POST to llama-server")?;
+
+    let status = resp.status();
+    let json: serde_json::Value = resp.json().await.context("decoding VLM response")?;
+
+    if !status.is_success() {
+        bail!("VLM returned {status}: {json}");
+    }
+
+    let content = json["choices"][0]["message"]["content"]
+        .as_str()
+        .unwrap_or("")
+        .trim()
+        .to_string();
+
+    // Guard 1: the empty-content failure from tonight. Loud, not silent.
+    if content.is_empty() {
+        bail!(
+            "VLM returned empty content (finish_reason={:?}) — check enable_thinking",
+            json["choices"][0]["finish_reason"]
+        );
+    }
+
+    // Guard 2: new. Without the agent as a formatting backstop the VLM
+    // can drift into prose. Catch it here so the error names this layer,
+    // not validate.rs.
+    let cleaned = strip_fences(&content);
+    if !cleaned.starts_with('{') {
+        bail!("VLM returned non-JSON content: {}", truncate(&cleaned, 200));
+    }
+
+    Ok(cleaned)
+}
+
+fn strip_fences(s: &str) -> String {
+    s.trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim()
+        .to_string()
+}
+
+fn truncate(s: &str, n: usize) -> String {
+    if s.len() <= n { s.to_string() } else { format!("{}…", &s[..n]) }
+}
+
+fn base64_encode(b: &[u8]) -> String {
+    use base64::Engine;
+    base64::engine::general_purpose::STANDARD.encode(b)
+}
+
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::post,
+    Json, Router,
+};
+use std::time::Instant;
+
+pub async fn serve(port: u16) -> anyhow::Result<()> {
+    let app = Router::new()
+        .route("/analyze", post(handle_analyze))
+        .route("/health", axum::routing::get(|| async { "ok" }));
+
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", port)).await?;
+    eprintln!("[tools] serve mode listening on 0.0.0.0:{port}");
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
+async fn handle_analyze() -> Result<Json<serde_json::Value>, AppError> {
+    let t0 = Instant::now();
+
+    // ⚠️ SEAM 4: your run_screenshot signature. Assumed to return
+    // something Path-like. If it returns bytes, write them to a
+    // temp file here or change the structured fn to take &[u8].
+    let shot = crate::run_screenshot().await?;
+    let capture_ms = t0.elapsed().as_millis() as u64;
+
+    let result = crate::vlm::run_analyze_image_structured(shot.as_ref()).await?;
+    let vlm_ms = t0.elapsed().as_millis() as u64 - capture_ms;
+
+    eprintln!("[tools] capture={capture_ms}ms vlm={vlm_ms}ms");
+
+    Ok(Json(serde_json::json!({
+        "result": result,
+        "capture_ms": capture_ms,
+        "vlm_ms": vlm_ms,
+    })))
+}
+
+pub struct AppError(anyhow::Error);
+
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        eprintln!("[tools] error: {:#}", self.0);
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(serde_json::json!({ "error": format!("{:#}", self.0) })),
+        )
+            .into_response()
+    }
+}
+
+impl<E: Into<anyhow::Error>> From<E> for AppError {
+    fn from(e: E) -> Self {
+        Self(e.into())
+    }
+}
+
+#[cfg(feature = "serve")]
+mod serve;
+mod vlm;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    #[cfg(feature = "serve")]
+    if let Some(port) = parse_serve_flag() {
+        return serve::serve(port).await;
+    }
+
+    // ── existing stdio JSON-RPC loop, untouched ──
+    run_stdio().await
+}
+
+#[cfg(feature = "serve")]
+fn parse_serve_flag() -> Option<u16> {
+    let args: Vec<String> = std::env::args().collect();
+    if !args.iter().any(|a| a == "--serve") {
+        return None;
+    }
+    let port = args
+        .iter()
+        .position(|a| a == "--port")
+        .and_then(|i| args.get(i + 1))
+        .and_then(|p| p.parse().ok())
+        .unwrap_or(8788);
+    Some(port)
+}
+
+[dependencies]
+async-trait = "0.1"
+# plus existing
+
+
+use anyhow::{bail, Context, Result};
+use async_trait::async_trait;
+
+#[async_trait]
+pub trait AnalyzeBackend: Send + Sync {
+    /// Returns the raw six-field JSON body, unvalidated.
+    async fn fetch(&self) -> Result<String>;
+    /// Tag for stagelog, so logs say which path produced a response.
+    fn name(&self) -> &'static str;
+}
+
+// ── agentic path ────────────────────────────────────────────
+
+pub struct Webhook {
+    pub url: String,
+}
+
+#[async_trait]
+impl AnalyzeBackend for Webhook {
+    async fn fetch(&self) -> Result<String> {
+        // ⚠️ SEAM 5: move your existing webhook() body in here verbatim.
+        // It should end by returning the agent's final response string.
+        let resp = reqwest::Client::new()
+            .post(&self.url)
+            .json(&serde_json::json!({ "message": "Analyze the screen." }))
+            .send()
+            .await
+            .context("POST to gateway /webhook")?;
+
+        let json: serde_json::Value = resp.json().await?;
+        let text = json["response"].as_str().unwrap_or("").trim().to_string();
+
+        if text.is_empty() {
+            bail!("gateway returned empty response field");
+        }
+        Ok(text)
+    }
+
+    fn name(&self) -> &'static str {
+        "agentic"
+    }
+}
+
+// ── direct path ─────────────────────────────────────────────
+
+pub struct Direct {
+    pub url: String,
+}
+
+#[async_trait]
+impl AnalyzeBackend for Direct {
+    async fn fetch(&self) -> Result<String> {
+        let endpoint = format!("{}/analyze", self.url.trim_end_matches('/'));
+        let client = reqwest::Client::new();
+
+        // One retry on connection-refused: the tools server may still be
+        // binding when the sidecar starts. Cheaper than tuning sleeps.
+        let resp = match client.post(&endpoint).send().await {
+            Ok(r) => r,
+            Err(e) if e.is_connect() => {
+                eprintln!("[sidecar] tools not up, retrying in 2s");
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                client.post(&endpoint).send().await
+                    .context("POST to tools /analyze (after retry)")?
+            }
+            Err(e) => return Err(e).context("POST to tools /analyze"),
+        };
+
+        let status = resp.status();
+        let json: serde_json::Value = resp.json().await?;
+
+        if !status.is_success() {
+            bail!("tools returned {status}: {}", json["error"]);
+        }
+
+        eprintln!(
+            "[sidecar] capture={}ms vlm={}ms",
+            json["capture_ms"], json["vlm_ms"]
+        );
+
+        let result = json["result"].as_str().unwrap_or("").trim().to_string();
+        if result.is_empty() {
+            bail!("tools returned empty result field");
+        }
+        Ok(result)
+    }
+
+    fn name(&self) -> &'static str {
+        "direct"
+    }
+}
+
+// ── test double ─────────────────────────────────────────────
+
+pub struct Mock {
+    pub canned: String,
+}
+
+#[async_trait]
+impl AnalyzeBackend for Mock {
+    async fn fetch(&self) -> Result<String> {
+        Ok(self.canned.clone())
+    }
+    fn name(&self) -> &'static str {
+        "mock"
+    }
+}
+
+// ── selection ───────────────────────────────────────────────
+
+pub fn from_env() -> Box<dyn AnalyzeBackend> {
+    match std::env::var("TOOLS_HTTP_URL") {
+        Ok(url) if !url.is_empty() => {
+            eprintln!("[sidecar] backend=direct url={url}");
+            Box::new(Direct { url })
+        }
+        _ => {
+            let url = std::env::var("GATEWAY_URL")
+                .unwrap_or_else(|_| "http://127.0.0.1:42617/webhook".into());
+            eprintln!("[sidecar] backend=agentic url={url}");
+            Box::new(Webhook { url })
+        }
+    }
+}
+
+
+mod backend;
+use backend::AnalyzeBackend;
+use std::sync::Arc;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // Construct once at startup, not per request.
+    let be: Arc<dyn AnalyzeBackend> = Arc::from(backend::from_env());
+
+    let app = Router::new()
+        .route("/analyze-screen", post(handle_analyze_screen))
+        .with_state(be);
+
+    let listener = tokio::net::TcpListener::bind(("0.0.0.0", 8787)).await?;
+    axum::serve(listener, app).await?;
+    Ok(())
+}
+
+async fn handle_analyze_screen(
+    State(be): State<Arc<dyn AnalyzeBackend>>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let t0 = std::time::Instant::now();
+
+    let raw = be.fetch().await?;
+
+    // ⚠️ SEAM 6: your validate.rs signature — unchanged either way.
+    let parsed = validate::six_field(&raw)?;
+
+    stagelog::emit(be.name(), &parsed, t0.elapsed());
+
+    Ok(Json(parsed))
+}
